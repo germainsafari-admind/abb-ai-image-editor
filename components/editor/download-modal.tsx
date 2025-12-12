@@ -150,15 +150,13 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
     }
   }, [isOpen, skipToDownload])
 
-  const imageSize = `${imageState.width} x ${imageState.height} px`
-  const canGenerateMetadata = sourceInfo.business && sourceInfo.assetType
-
-  // Generate preview filename (must stay before any early returns to keep hook order stable)
+  // Generate preview filename - all hooks must be called unconditionally before any early returns
   const previewFileName = useMemo(() => {
     return generateFileName(sourceInfo, imageState.originalFileName)
   }, [sourceInfo, imageState.originalFileName])
 
-  if (!isOpen) return null
+  const imageSize = `${imageState.width} x ${imageState.height} px`
+  const canGenerateMetadata = sourceInfo.business && sourceInfo.assetType
 
   // Generate metadata with OpenAI
   const generateMetadata = async () => {
@@ -311,6 +309,10 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
     } finally {
       setIsDownloading(false)
     }
+  }
+
+  if (!isOpen) {
+    return null
   }
 
   return (
