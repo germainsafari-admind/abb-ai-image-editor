@@ -1,13 +1,21 @@
 <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
   <rect width="32" height="32" rx="6" fill="#FF000F"/>
-  <g transform="translate(2, 6) scale(0.45)">
-    <!-- ABB Logo - First A -->
-    <path d="M11.849 0.074707H8.62913L4.42513 11.7113H11.849V0.074707Z" fill="white"/>
-    <path d="M4.16106 12.4399L-0.0436859 24.0765H6.15083L7.88565 18.9855H11.8488V12.4399H4.16106Z" fill="white"/>
-    <path d="M12.5908 18.9845H16.5555L18.2903 24.0755H24.4833L20.2793 12.439H12.5908V18.9845Z" fill="white"/>
-    <path d="M20.0162 11.7113L15.8122 0.074707H12.5908V11.7113H20.0162Z" fill="white"/>
-    <!-- ABB Logo - B -->
-    <path d="M26.7129 11.7113H34.1457V0.074707H26.7129V11.7113Z" fill="white"/>
-    <path d="M26.7129 24.0755H34.1457V12.439H26.7129V24.0755Z" fill="white"/>
+  <!-- ABB Logo - scaled and centered for favicon -->
+  <g transform="translate(3.5, 9) scale(0.38)">
+    <!-- First A -->
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M11.849 0.074707H8.62913L4.42513 11.7113H11.849V0.074707Z" fill="white"/>
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M4.16106 12.4399L-0.0436859 24.0765H6.15083L7.88565 18.9855H11.8488V12.4399H4.16106Z" fill="white"/>
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M12.5908 18.9845H16.5555L18.2903 24.0755H24.4833L20.2793 12.439H12.5908V18.9845Z" fill="white"/>
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M20.0162 11.7113L15.8122 0.074707H12.5908V11.7113H20.0162Z" fill="white"/>
+    <!-- First B -->
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M26.7129 11.7113H34.1457V0.074707H26.7129V11.7113Z" fill="white"/>
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M42.5067 11.7113C41.7493 10.7091 40.7511 9.89087 39.596 9.34031C40.9421 8.4203 41.8251 6.89446 41.8251 5.1657C41.8251 2.35402 39.4957 0.074707 36.6221 0.074707H34.888V11.7113H42.5067Z" fill="white"/>
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M34.888 12.439V24.0755H36.1271C40.5065 24.0755 43.9308 20.6035 43.9308 16.3183C43.9308 14.9037 43.6647 13.5801 42.9898 12.439H34.888Z" fill="white"/>
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M26.7129 24.0755H34.1457V12.439H26.7129V24.0755Z" fill="white"/>
+    <!-- Second B -->
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M46.782 11.7113H54.2148V0.074707H46.782V11.7113Z" fill="white"/>
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M62.5766 11.7113C61.8185 10.7091 60.8202 9.89087 59.6652 9.34031C61.012 8.4203 61.8943 6.89446 61.8943 5.1657C61.8943 2.35402 59.5648 0.074707 56.6913 0.074707H54.9572V11.7113H62.5766Z" fill="white"/>
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M54.9572 12.439V24.0755H56.1963C60.5757 24.0755 64 20.6035 64 16.3183C64 14.9037 63.7339 13.5801 63.059 12.439H54.9572Z" fill="white"/>
+    <path fill-rule="evenodd" clip-rule="evenodd" d="M46.782 24.0755H54.2148V12.439H46.782V24.0755Z" fill="white"/>
   </g>
 </svg>
