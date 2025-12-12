@@ -9,7 +9,7 @@ interface SourceInformation {
 async function analyzeImageWithOpenAI(
   imageUrl: string,
   sourceInfo?: SourceInformation,
-): Promise<{ description: string; tags: string[] }> {
+): Promise<{ title: string; description: string; tags: string[] }> {
   const openaiApiKey = process.env.OPENAI_API_KEY
   if (!openaiApiKey) {
     throw new Error("OPENAI_API_KEY not configured. Please add your OpenAI API key.")
@@ -25,11 +25,13 @@ async function analyzeImageWithOpenAI(
 ${sourceContext}
 
 Please provide:
-1. A concise description (max 400 characters) that describes what's in the image and how it relates to the business context. Be specific and professional.
-2. 5-8 relevant tags for searchability (single words or short phrases).
+1. A concise title (max 200 characters) that describes the image content.
+2. A concise description (max 400 characters) that describes what's in the image and how it relates to the business context. Be specific and professional.
+3. 5-8 relevant tags for searchability (single words or short phrases).
 
 Return as JSON with this exact format:
 {
+  "title": "your title here",
   "description": "your description here",
   "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"]
 }
@@ -89,6 +91,7 @@ Only return the JSON, no other text.`
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0])
         return {
+          title: parsed.title || parsed.description?.split(".")[0] || "Image",
           description: parsed.description || "Professional image asset.",
           tags: Array.isArray(parsed.tags) ? parsed.tags : [],
         }
@@ -99,6 +102,7 @@ Only return the JSON, no other text.`
 
     // Fallback response
     return {
+      title: "Professional image asset",
       description: "Professional image asset for corporate use.",
       tags: sourceInfo
         ? [sourceInfo.business.toLowerCase(), sourceInfo.assetType.toLowerCase(), "corporate", "professional"]

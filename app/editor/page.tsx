@@ -43,6 +43,10 @@ export default function EditorPage() {
     const img = new Image()
     img.crossOrigin = "anonymous"
     img.onload = () => {
+      // Get original filename from localStorage if available
+      const originalFileName =
+        typeof window !== "undefined" ? window.localStorage.getItem("lastUploadedFileName") || undefined : undefined
+
       const newState: ImageState = {
         originalUrl: resolvedImageUrl,
         currentUrl: resolvedImageUrl,
@@ -50,6 +54,7 @@ export default function EditorPage() {
         height: img.height,
         isBlurred: false,
         isAIGenerated: false,
+        originalFileName,
       }
       setImageState(newState)
       setEditHistory([{ ...newState, timestamp: Date.now() }])

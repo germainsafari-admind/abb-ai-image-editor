@@ -5,6 +5,7 @@ export interface ImageState {
   height: number
   isBlurred: boolean
   isAIGenerated: boolean
+  originalFileName?: string
 }
 
 export interface EditHistoryItem extends ImageState {

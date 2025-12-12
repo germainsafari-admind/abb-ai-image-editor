@@ -5,26 +5,96 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import { ChevronLeft, Check, RotateCcw } from "lucide-react"
 import type { ImageState, EditorMode, AspectRatioPreset, CropDimensions } from "@/types/editor"
 
-const ASPECT_RATIOS: AspectRatioPreset[] = [
-  { name: "9:16", label: "Media Bank", ratio: 9 / 16, displayRatio: "9:16", platform: "Media Bank", boxHeight: 72 },
-  { name: "2:3", label: "Instagram", ratio: 2 / 3, displayRatio: "2:3", platform: "Instagram", boxHeight: 66 },
+// Category-based presets structure
+interface CategoryPreset {
+  name: string
+  label: string
+  ratio: number
+  displayRatio: string
+  description?: string
+}
+
+interface Category {
+  name: string
+  label: string
+  presets: CategoryPreset[]
+}
+
+const CROP_CATEGORIES: Category[] = [
   {
-    name: "4:5",
-    label: "Facebook",
-    ratio: 4 / 5,
-    displayRatio: "4:5",
-    platform: "Facebook",
-    description: "Vertical news feed",
-    boxHeight: 56,
+    name: "media-bank",
+    label: "Media Bank",
+    presets: [
+      { name: "1:1", label: "Rectangle", ratio: 1, displayRatio: "1:1" },
+      { name: "5:2", label: "Landscape", ratio: 5 / 2, displayRatio: "5:2" },
+      { name: "16:9", label: "Landscape", ratio: 16 / 9, displayRatio: "16:9" },
+      { name: "4:3", label: "Landscape", ratio: 4 / 3, displayRatio: "4:3" },
+      { name: "3:1", label: "Landscape", ratio: 3 / 1, displayRatio: "3:1" },
+      { name: "16:10", label: "Landscape", ratio: 16 / 10, displayRatio: "16:10" },
+      { name: "2:1", label: "Landscape", ratio: 2 / 1, displayRatio: "2:1" },
+      { name: "8:9", label: "Portrait", ratio: 8 / 9, displayRatio: "8:9" },
+      { name: "2:3", label: "Portrait", ratio: 2 / 3, displayRatio: "2:3" },
+    ],
   },
-  { name: "1:1", label: "LinkedIn", ratio: 1, displayRatio: "1:1", platform: "LinkedIn", boxHeight: 48 },
-  { name: "4:3", label: "Twitter", ratio: 4 / 3, displayRatio: "4:3", platform: "Twitter", boxHeight: 42 },
-  { name: "3:2", label: "Viva Engage", ratio: 3 / 2, displayRatio: "3:2", platform: "Viva Engage", boxHeight: 38 },
-  { name: "16:9", label: "Landscape", ratio: 16 / 9, displayRatio: "16:9", platform: "Landscape", boxHeight: 34 },
-  { name: "2.35:1", label: "Cinema", ratio: 2.35, displayRatio: "2.35:1", platform: "Cinema", boxHeight: 30 },
+  {
+    name: "instagram",
+    label: "Instagram",
+    presets: [
+      { name: "1:1", label: "Feed Post - Square", ratio: 1, displayRatio: "1:1" },
+      { name: "1.91:1", label: "Landscape", ratio: 1.91 / 1, displayRatio: "1.91:1" },
+      { name: "4:5", label: "Portrait", ratio: 4 / 5, displayRatio: "4:5" },
+      { name: "9:16", label: "Instagram Stories", ratio: 9 / 16, displayRatio: "9:16" },
+    ],
+  },
+  {
+    name: "facebook",
+    label: "Facebook",
+    presets: [
+      { name: "1.91:1", label: "Landscape Feed Post", ratio: 1.91 / 1, displayRatio: "1.91:1" },
+      { name: "1:1", label: "Square Feed Post / Profile Picture", ratio: 1, displayRatio: "1:1" },
+      { name: "4:5", label: "Vertical News Feed", ratio: 4 / 5, displayRatio: "4:5" },
+      { name: "2:3", label: "Portrait Ad", ratio: 2 / 3, displayRatio: "2:3" },
+      { name: "9:16", label: "Facebook Stories", ratio: 9 / 16, displayRatio: "9:16" },
+      { name: "16:9", label: "Horizontal post / Event Cover Photo", ratio: 16 / 9, displayRatio: "16:9" },
+      { name: "3:2", label: "Landscape Ad", ratio: 3 / 2, displayRatio: "3:2" },
+      { name: "2.35:1", label: "Cinematic Wide Video", ratio: 2.35 / 1, displayRatio: "2.35:1" },
+    ],
+  },
+  {
+    name: "linkedin",
+    label: "LinkedIn",
+    presets: [
+      { name: "1.91:1", label: "Landscape Feed Post", ratio: 1.91 / 1, displayRatio: "1.91:1" },
+      { name: "1:1", label: "Square Feed Post / Personal Profile Image", ratio: 1, displayRatio: "1:1" },
+      { name: "1.91:1-cover", label: "Company Page Cover Image", ratio: 1.91 / 1, displayRatio: "1.91:1" },
+    ],
+  },
+  {
+    name: "twitter",
+    label: "Twitter",
+    presets: [
+      { name: "1.91:1", label: "Landscape Feed Post", ratio: 1.91 / 1, displayRatio: "1.91:1" },
+      { name: "1:1", label: "Profile Picture", ratio: 1, displayRatio: "1:1" },
+      { name: "3:1", label: "Header Image", ratio: 3 / 1, displayRatio: "3:1" },
+    ],
+  },
+  {
+    name: "viva-engage",
+    label: "Viva Engage",
+    presets: [
+      { name: "16:9", label: "Landscape Post Image", ratio: 16 / 9, displayRatio: "16:9" },
+      { name: "1:1", label: "Profile Picture", ratio: 1, displayRatio: "1:1" },
+      { name: "1.91:1", label: "Cover Image", ratio: 1.91 / 1, displayRatio: "1.91:1" },
+    ],
+  },
+  {
+    name: "custom",
+    label: "Custom",
+    presets: [],
+  },
 ]
 
-const PLATFORM_LABELS = ["Media Bank", "Instagram", "Facebook", "LinkedIn", "Twitter", "Viva Engage", "Custom"]
+const PLATFORM_LABELS = CROP_CATEGORIES.map((cat) => cat.label)
 
 interface EditorCanvasProps {
   imageState: ImageState
@@ -49,8 +119,8 @@ export default function EditorCanvas({
   const imageRef = useRef<HTMLImageElement>(null)
 
   // Crop state
-  const [selectedRatio, setSelectedRatio] = useState<AspectRatioPreset>(ASPECT_RATIOS[2])
-  const [selectedPlatform, setSelectedPlatform] = useState("Facebook")
+  const [selectedCategory, setSelectedCategory] = useState<string>("facebook")
+  const [selectedPreset, setSelectedPreset] = useState<CategoryPreset | null>(null)
   const [isCustom, setIsCustom] = useState(false)
   const [cropDims, setCropDims] = useState<CropDimensions>({ x: 0, y: 0, width: 100, height: 100 })
   const [isDragging, setIsDragging] = useState<string | null>(null)
@@ -62,11 +132,14 @@ export default function EditorCanvas({
   const [isGenerating, setIsGenerating] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
 
+  // Get current category
+  const currentCategory = CROP_CATEGORIES.find((cat) => cat.name === selectedCategory) || CROP_CATEGORIES[0]
+
   // Initialize crop dimensions when entering crop mode
   useEffect(() => {
     if (editorMode === "crop" && imageRef.current) {
       const rect = imageRef.current.getBoundingClientRect()
-      const ratio = isCustom ? imageState.width / imageState.height : selectedRatio.ratio
+      const ratio = isCustom ? imageState.width / imageState.height : selectedPreset?.ratio || 16 / 9
 
       let cropW = rect.width * 0.6
       let cropH = cropW / ratio
@@ -82,8 +155,13 @@ export default function EditorCanvas({
         width: cropW,
         height: cropH,
       })
+
+      // Set initial preset if none selected
+      if (!selectedPreset && currentCategory.presets.length > 0) {
+        setSelectedPreset(currentCategory.presets[0])
+      }
     }
-  }, [editorMode, selectedRatio, imageState, isCustom])
+  }, [editorMode, selectedPreset, imageState, isCustom, currentCategory])
 
   // Calculate displayed dimensions
   useEffect(() => {
@@ -110,20 +188,19 @@ export default function EditorCanvas({
     return () => window.removeEventListener("applyCrop", handleApplyCrop)
   }, [editorMode, cropDims, imageState])
 
-  const handleRatioSelect = (ratio: AspectRatioPreset) => {
-    setSelectedRatio(ratio)
-    setSelectedPlatform(ratio.platform)
+  const handlePresetSelect = (preset: CategoryPreset) => {
+    setSelectedPreset(preset)
     setIsCustom(false)
 
     if (!imageRef.current) return
     const rect = imageRef.current.getBoundingClientRect()
 
     let cropW = rect.width * 0.6
-    let cropH = cropW / ratio.ratio
+    let cropH = cropW / preset.ratio
 
     if (cropH > rect.height * 0.8) {
       cropH = rect.height * 0.8
-      cropW = cropH * ratio.ratio
+      cropW = cropH * preset.ratio
     }
 
     setCropDims({
@@ -134,14 +211,17 @@ export default function EditorCanvas({
     })
   }
 
-  const handlePlatformSelect = (platform: string) => {
-    setSelectedPlatform(platform)
-    if (platform === "Custom") {
+  const handleCategorySelect = (categoryName: string) => {
+    setSelectedCategory(categoryName)
+    if (categoryName === "custom") {
       setIsCustom(true)
+      setSelectedPreset(null)
     } else {
       setIsCustom(false)
-      const ratio = ASPECT_RATIOS.find((r) => r.platform === platform) || ASPECT_RATIOS[0]
-      handleRatioSelect(ratio)
+      const category = CROP_CATEGORIES.find((cat) => cat.name === categoryName)
+      if (category && category.presets.length > 0) {
+        handlePresetSelect(category.presets[0])
+      }
     }
   }
 
@@ -170,42 +250,101 @@ export default function EditorCanvas({
       const minSize = 50
 
       const newDims = { ...cropDims }
+      const currentRatio = selectedPreset?.ratio
 
       if (isDragging === "move") {
         newDims.x = Math.max(0, Math.min(rect.width - dragStart.cropW, dragStart.cropX + deltaX))
         newDims.y = Math.max(0, Math.min(rect.height - dragStart.cropH, dragStart.cropY + deltaY))
       } else if (isDragging === "nw") {
-        const newW = Math.max(minSize, dragStart.cropW - deltaX)
-        const newH = Math.max(minSize, dragStart.cropH - deltaY)
-        newDims.x = dragStart.cropX + (dragStart.cropW - newW)
-        newDims.y = dragStart.cropY + (dragStart.cropH - newH)
-        newDims.width = newW
-        newDims.height = newH
+        if (currentRatio && !isCustom) {
+          const newW = Math.max(minSize, dragStart.cropW - deltaX)
+          const newH = newW / currentRatio
+          newDims.x = dragStart.cropX + (dragStart.cropW - newW)
+          newDims.y = dragStart.cropY + (dragStart.cropH - newH)
+          newDims.width = newW
+          newDims.height = newH
+        } else {
+          const newW = Math.max(minSize, dragStart.cropW - deltaX)
+          const newH = Math.max(minSize, dragStart.cropH - deltaY)
+          newDims.x = dragStart.cropX + (dragStart.cropW - newW)
+          newDims.y = dragStart.cropY + (dragStart.cropH - newH)
+          newDims.width = newW
+          newDims.height = newH
+        }
       } else if (isDragging === "ne") {
-        newDims.width = Math.max(minSize, dragStart.cropW + deltaX)
-        const newH = Math.max(minSize, dragStart.cropH - deltaY)
-        newDims.y = dragStart.cropY + (dragStart.cropH - newH)
-        newDims.height = newH
+        if (currentRatio && !isCustom) {
+          newDims.width = Math.max(minSize, dragStart.cropW + deltaX)
+          const newH = newDims.width / currentRatio
+          newDims.y = dragStart.cropY + (dragStart.cropH - newH)
+          newDims.height = newH
+        } else {
+          newDims.width = Math.max(minSize, dragStart.cropW + deltaX)
+          const newH = Math.max(minSize, dragStart.cropH - deltaY)
+          newDims.y = dragStart.cropY + (dragStart.cropH - newH)
+          newDims.height = newH
+        }
       } else if (isDragging === "sw") {
-        const newW = Math.max(minSize, dragStart.cropW - deltaX)
-        newDims.x = dragStart.cropX + (dragStart.cropW - newW)
-        newDims.width = newW
-        newDims.height = Math.max(minSize, dragStart.cropH + deltaY)
+        if (currentRatio && !isCustom) {
+          const newW = Math.max(minSize, dragStart.cropW - deltaX)
+          newDims.x = dragStart.cropX + (dragStart.cropW - newW)
+          newDims.height = newW / currentRatio
+        } else {
+          const newW = Math.max(minSize, dragStart.cropW - deltaX)
+          newDims.x = dragStart.cropX + (dragStart.cropW - newW)
+          newDims.width = newW
+          newDims.height = Math.max(minSize, dragStart.cropH + deltaY)
+        }
       } else if (isDragging === "se") {
-        newDims.width = Math.max(minSize, dragStart.cropW + deltaX)
-        newDims.height = Math.max(minSize, dragStart.cropH + deltaY)
+        if (currentRatio && !isCustom) {
+          newDims.width = Math.max(minSize, dragStart.cropW + deltaX)
+          newDims.height = newDims.width / currentRatio
+        } else {
+          newDims.width = Math.max(minSize, dragStart.cropW + deltaX)
+          newDims.height = Math.max(minSize, dragStart.cropH + deltaY)
+        }
       } else if (isDragging === "n") {
-        const newH = Math.max(minSize, dragStart.cropH - deltaY)
-        newDims.y = dragStart.cropY + (dragStart.cropH - newH)
-        newDims.height = newH
+        if (currentRatio && !isCustom) {
+          const newH = Math.max(minSize, dragStart.cropH - deltaY)
+          const newW = newH * currentRatio
+          newDims.x = dragStart.cropX + (dragStart.cropW - newW)
+          newDims.y = dragStart.cropY + (dragStart.cropH - newH)
+          newDims.width = newW
+          newDims.height = newH
+        } else {
+          const newH = Math.max(minSize, dragStart.cropH - deltaY)
+          newDims.y = dragStart.cropY + (dragStart.cropH - newH)
+          newDims.height = newH
+        }
       } else if (isDragging === "s") {
-        newDims.height = Math.max(minSize, dragStart.cropH + deltaY)
+        if (currentRatio && !isCustom) {
+          const newH = Math.max(minSize, dragStart.cropH + deltaY)
+          const newW = newH * currentRatio
+          newDims.x = dragStart.cropX + (dragStart.cropW - newW)
+          newDims.width = newW
+          newDims.height = newH
+        } else {
+          newDims.height = Math.max(minSize, dragStart.cropH + deltaY)
+        }
       } else if (isDragging === "e") {
-        newDims.width = Math.max(minSize, dragStart.cropW + deltaX)
+        if (currentRatio && !isCustom) {
+          newDims.width = Math.max(minSize, dragStart.cropW + deltaX)
+          newDims.height = newDims.width / currentRatio
+        } else {
+          newDims.width = Math.max(minSize, dragStart.cropW + deltaX)
+        }
       } else if (isDragging === "w") {
-        const newW = Math.max(minSize, dragStart.cropW - deltaX)
-        newDims.x = dragStart.cropX + (dragStart.cropW - newW)
-        newDims.width = newW
+        if (currentRatio && !isCustom) {
+          const newW = Math.max(minSize, dragStart.cropW - deltaX)
+          const newH = newW / currentRatio
+          newDims.x = dragStart.cropX + (dragStart.cropW - newW)
+          newDims.y = dragStart.cropY + (dragStart.cropH - newH)
+          newDims.width = newW
+          newDims.height = newH
+        } else {
+          const newW = Math.max(minSize, dragStart.cropW - deltaX)
+          newDims.x = dragStart.cropX + (dragStart.cropW - newW)
+          newDims.width = newW
+        }
       }
 
       // Constrain to image bounds
@@ -216,7 +355,7 @@ export default function EditorCanvas({
 
       setCropDims(newDims)
     },
-    [isDragging, dragStart, cropDims],
+    [isDragging, dragStart, cropDims, selectedPreset, isCustom],
   )
 
   const handleMouseUp = useCallback(() => {
@@ -320,10 +459,12 @@ export default function EditorCanvas({
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
-              <span className="font-medium">{selectedPlatform} format:</span>
-              <span className="text-[#7C3AED] font-medium">
-                {selectedRatio.description || selectedRatio.platform} ({selectedRatio.displayRatio})
-              </span>
+              <span className="font-medium">{currentCategory.label} format:</span>
+              {selectedPreset && (
+                <span className="text-[#7C3AED] font-medium">
+                  {selectedPreset.label} ({selectedPreset.displayRatio})
+                </span>
+              )}
             </div>
             <div className="text-sm text-muted-foreground">
               {displayedDims.width} x {displayedDims.height} px
@@ -541,58 +682,77 @@ export default function EditorCanvas({
                 <div className="mx-auto rounded-2xl border border-border bg-background shadow-xl px-4 py-4 sm:px-6">
                   {/* Format title */}
                   <div className="text-xs sm:text-sm font-medium mb-3">
-                    {selectedPlatform} format:{" "}
-                    <span className="text-[#7C3AED]">
-                      {selectedRatio.description || selectedRatio.platform} ({selectedRatio.displayRatio})
-                    </span>
+                    Select media type:
+                  </div>
+                  <div className="text-xs text-muted-foreground mb-4">
+                    Choose a category to display the cropping presets aligned with its standard formats for each type of media.
                   </div>
 
-                  {/* Ratio boxes – horizontally scrollable, fluid sizing */}
-                  <div className="flex items-end gap-2 mb-4 overflow-x-auto pb-2">
-                    {ASPECT_RATIOS.map((ratio) => {
-                      const isSelected = selectedRatio.name === ratio.name && !isCustom
-                      const boxWidth = Math.round((ratio.boxHeight || 48) * ratio.ratio)
-
+                  {/* Category tabs */}
+                  <div className="flex flex-wrap gap-2 mb-4 text-xs sm:text-sm">
+                    {CROP_CATEGORIES.map((category) => {
+                      const isSelected = selectedCategory === category.name
                       return (
                         <button
-                          key={ratio.name}
-                          onClick={() => handleRatioSelect(ratio)}
-                          className={`flex-shrink-0 flex items-center justify-center border-2 rounded-lg transition-all ${
-                            isSelected
-                              ? "border-[#7C3AED] text-[#7C3AED] bg-[#F3E8FF]"
-                              : "border-gray-300 text-gray-500 hover:border-gray-400 bg-white"
-                          }`}
-                          style={{
-                            width: `${Math.max(36, boxWidth)}px`,
-                            height: `${ratio.boxHeight || 48}px`,
-                            minWidth: "36px",
-                          }}
-                        >
-                          <span className="text-xs font-medium">{ratio.displayRatio}</span>
-                        </button>
-                      )
-                    })}
-                  </div>
-
-                  {/* Platform labels */}
-                  <div className="flex flex-wrap gap-2 text-xs sm:text-sm">
-                    {PLATFORM_LABELS.map((platform) => {
-                      const isSelected = selectedPlatform === platform
-                      return (
-                        <button
-                          key={platform}
-                          onClick={() => handlePlatformSelect(platform)}
+                          key={category.name}
+                          onClick={() => handleCategorySelect(category.name)}
                           className={`px-3 py-1.5 rounded-full font-medium transition-all ${
                             isSelected
-                              ? "bg-gray-900 text-white shadow-sm"
+                              ? "bg-[#7C3AED] text-white shadow-sm"
                               : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                           }`}
                         >
-                          {platform}
+                          {category.label}
                         </button>
                       )
                     })}
                   </div>
+
+                  {/* Preset boxes – horizontally scrollable, fluid sizing */}
+                  {currentCategory.presets.length > 0 && (
+                    <>
+                      <div className="text-xs sm:text-sm font-medium mb-3">
+                        {currentCategory.label} format:
+                        {selectedPreset && (
+                          <span className="text-[#7C3AED] ml-1">
+                            {selectedPreset.label} ({selectedPreset.displayRatio})
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-end gap-2 mb-4 overflow-x-auto pb-2">
+                        {currentCategory.presets.map((preset) => {
+                          const isSelected = selectedPreset?.name === preset.name
+                          const boxHeight = 48
+                          const boxWidth = Math.round(boxHeight * preset.ratio)
+
+                          return (
+                            <button
+                              key={preset.name}
+                              onClick={() => handlePresetSelect(preset)}
+                              className={`flex-shrink-0 flex items-center justify-center border-2 rounded-lg transition-all ${
+                                isSelected
+                                  ? "border-[#7C3AED] text-[#7C3AED] bg-[#F3E8FF]"
+                                  : "border-gray-300 text-gray-500 hover:border-gray-400 bg-white"
+                              }`}
+                              style={{
+                                width: `${Math.max(36, boxWidth)}px`,
+                                height: `${boxHeight}px`,
+                                minWidth: "36px",
+                              }}
+                            >
+                              <span className="text-xs font-medium">{preset.displayRatio}</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </>
+                  )}
+
+                  {selectedCategory === "custom" && (
+                    <div className="text-sm text-muted-foreground">
+                      Custom crop mode - drag handles to adjust size freely
+                    </div>
+                  )}
                 </div>
               </div>
             )}

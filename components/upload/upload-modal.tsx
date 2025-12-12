@@ -37,6 +37,7 @@ export default function UploadModal({ isOpen, onClose, onImageUploaded }: Upload
           // Persist last uploaded image if possible, but don't break on quota issues
           try {
             localStorage.setItem("lastUploadedImage", imageDataUrl)
+            localStorage.setItem("lastUploadedFileName", file.name)
           } catch (storageError) {
             console.warn("Failed to store lastUploadedImage in localStorage", storageError)
           }

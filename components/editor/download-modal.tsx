@@ -1,8 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { X, DownloadIcon, ChevronRight, ChevronLeft, Info, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Switch } from "@/components/ui/switch"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { ImageState } from "@/types/editor"
 
 interface DownloadModalProps {
@@ -14,7 +16,10 @@ interface DownloadModalProps {
 
 interface SourceInfo {
   business: string
-  productCampaign: string
+  campaign: string
+  campaignEnabled: boolean
+  product: string
+  productEnabled: boolean
   assetType: string
 }
 
@@ -32,9 +37,69 @@ const BUSINESS_OPTIONS = [
   "Process Automation",
   "Motion",
   "Robotics & Discrete Automation",
-  "Global",
 ]
-const ASSET_TYPE_OPTIONS = ["Photos", "Illustrations", "Marketing & Promotion Material"]
+const ASSET_TYPE_OPTIONS = ["Key Visual", "Rollup", "Banner", "Poster", "Illustration", "Photo"]
+
+// Helper function to check if filename is Adobe Stock
+function isAdobeStock(filename?: string): boolean {
+  if (!filename) return false
+  // Adobe Stock files typically have format like: Adobe Stock_123456789.jpg
+  return /^Adobe\s+Stock[_\s]\d+/i.test(filename)
+}
+
+// Helper function to extract Adobe Stock ID
+function extractAdobeStockId(filename?: string): string | null {
+  if (!filename) return null
+  const match = filename.match(/Adobe\s+Stock[_\s](\d+)/i)
+  return match ? match[1] : null
+}
+
+// Generate filename based on new naming convention
+function generateFileName(sourceInfo: SourceInfo, originalFileName?: string): string {
+  // If Adobe Stock, keep original format: Adobe Stock_ID number
+  if (isAdobeStock(originalFileName)) {
+    const stockId = extractAdobeStockId(originalFileName)
+    if (stockId) {
+      return `Adobe Stock_${stockId}`
+    }
+  }
+
+  // If nothing is filled in, keep original filename (without extension)
+  if (!sourceInfo.business && !sourceInfo.campaign && !sourceInfo.product && !sourceInfo.assetType) {
+    if (originalFileName) {
+      // Remove extension
+      return originalFileName.replace(/\.[^/.]+$/, "")
+    }
+    return "image"
+  }
+
+  const parts: string[] = []
+
+  // 1. Division/Business name (if not Corporate)
+  if (sourceInfo.business && sourceInfo.business !== "Corporate") {
+    parts.push(sourceInfo.business.replace(/\s+/g, ""))
+  }
+
+  // 2. Campaign - if applicable
+  if (sourceInfo.campaignEnabled && sourceInfo.campaign.trim()) {
+    parts.push(sourceInfo.campaign.trim().replace(/\s+/g, "_"))
+  }
+
+  // 3. Product - if applicable
+  if (sourceInfo.productEnabled && sourceInfo.product.trim()) {
+    parts.push(sourceInfo.product.trim().replace(/\s+/g, "_"))
+  }
+
+  // 4. Asset type (if not Photo)
+  if (sourceInfo.assetType && sourceInfo.assetType !== "Photo") {
+    parts.push(sourceInfo.assetType.replace(/\s+/g, ""))
+  }
+
+  // Remove date, ratio, and format from parts (they might have been added)
+  // This is handled by not including them in the first place
+
+  return parts.length > 0 ? parts.join("_") : originalFileName?.replace(/\.[^/.]+$/, "") || "image"
+}
 
 export default function DownloadModal({ isOpen, imageState, onClose, skipToDownload = false }: DownloadModalProps) {
   const [step, setStep] = useState<ModalStep>("download")
@@ -45,7 +110,10 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
   // Metadata state
   const [sourceInfo, setSourceInfo] = useState<SourceInfo>({
     business: "",
-    productCampaign: "",
+    campaign: "",
+    campaignEnabled: false,
+    product: "",
+    productEnabled: false,
     assetType: "",
   })
   const [metadata, setMetadata] = useState<MetadataResult>({
@@ -56,22 +124,41 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
   const [newTag, setNewTag] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
   const [metadataApplied, setMetadataApplied] = useState(false)
+  const [isApplyingMetadata, setIsApplyingMetadata] = useState(false)
 
   // Reset state when modal opens or closes
   useEffect(() => {
     if (!isOpen) {
       setStep("download")
       setMetadataApplied(false)
+      setSourceInfo({
+        business: "",
+        campaign: "",
+        campaignEnabled: false,
+        product: "",
+        productEnabled: false,
+        assetType: "",
+      })
+      setMetadata({
+        title: "",
+        description: "",
+        tags: [],
+      })
     } else if (!skipToDownload) {
       // If not skipping, start at metadata step 1
       setStep("metadata-step1")
     }
   }, [isOpen, skipToDownload])
 
-  if (!isOpen) return null
-
   const imageSize = `${imageState.width} x ${imageState.height} px`
-  const canGenerateMetadata = sourceInfo.business && sourceInfo.productCampaign && sourceInfo.assetType
+  const canGenerateMetadata = sourceInfo.business && sourceInfo.assetType
+
+  // Generate preview filename (must stay before any early returns to keep hook order stable)
+  const previewFileName = useMemo(() => {
+    return generateFileName(sourceInfo, imageState.originalFileName)
+  }, [sourceInfo, imageState.originalFileName])
+
+  if (!isOpen) return null
 
   // Generate metadata with OpenAI
   const generateMetadata = async () => {
@@ -79,12 +166,23 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
 
     setIsGenerating(true)
     try {
+      // Build context string for API
+      const contextParts: string[] = []
+      if (sourceInfo.business) contextParts.push(sourceInfo.business)
+      if (sourceInfo.campaignEnabled && sourceInfo.campaign) contextParts.push(`campaign: ${sourceInfo.campaign}`)
+      if (sourceInfo.productEnabled && sourceInfo.product) contextParts.push(`product: ${sourceInfo.product}`)
+      if (sourceInfo.assetType) contextParts.push(`asset type: ${sourceInfo.assetType}`)
+
       const response = await fetch("/api/metadata", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           imageUrl: imageState.currentUrl,
-          sourceInformation: sourceInfo,
+          sourceInformation: {
+            business: sourceInfo.business,
+            productCampaign: [sourceInfo.campaign, sourceInfo.product].filter(Boolean).join(", ") || "",
+            assetType: sourceInfo.assetType,
+          },
         }),
       })
 
@@ -92,11 +190,8 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
 
       const result = await response.json()
 
-      // Generate structured title
-      const structuredTitle = `${sourceInfo.business.toLowerCase()}_${sourceInfo.assetType.toLowerCase()}_${sourceInfo.productCampaign.toLowerCase().replace(/\s+/g, "-")}`
-
       setMetadata({
-        title: structuredTitle,
+        title: result.title || result.description?.split(".")[0] || "Image",
         description: result.description || "",
         tags: result.tags || [],
       })
@@ -126,8 +221,12 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
     }))
   }
 
-  const applyMetadata = () => {
+  const applyMetadata = async () => {
+    setIsApplyingMetadata(true)
+    // Simulate applying metadata (you can add actual API call here if needed)
+    await new Promise((resolve) => setTimeout(resolve, 1000))
     setMetadataApplied(true)
+    setIsApplyingMetadata(false)
     setStep("download")
   }
 
@@ -163,7 +262,6 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
       let dataUrl = canvas.toDataURL(mimeType, 0.95)
 
       // If metadata is applied, we need to embed it
-      // For JPEG, we can add EXIF data; for PNG, we add tEXt chunks
       if (metadataApplied && metadata.title) {
         // Convert to blob and add metadata via server
         const blob = await (await fetch(dataUrl)).blob()
@@ -189,14 +287,16 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
         }
       }
 
-      const filename =
-        metadataApplied && metadata.title
-          ? `${metadata.title}.${format.toLowerCase()}`
-          : `image.${format.toLowerCase()}`
+      // Use generated filename or fallback
+      const filename = metadataApplied
+        ? `${previewFileName}.${format.toLowerCase()}`
+        : imageState.originalFileName?.replace(/\.[^/.]+$/, "") || `image.${format.toLowerCase()}`
+
+      const finalFilename = filename.endsWith(`.${format.toLowerCase()}`) ? filename : `${filename}.${format.toLowerCase()}`
 
       const a = document.createElement("a")
       a.href = dataUrl
-      a.download = filename
+      a.download = finalFilename
       a.click()
 
       // Clean up object URL if we created one
@@ -215,7 +315,7 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-background rounded-2xl w-full max-w-xl max-h-[90vh] overflow-auto flex flex-col">
+      <div className="bg-background rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-auto flex flex-col">
         {step === "download" && (
           <>
             <div className="p-6 border-b border-border flex items-center justify-between">
@@ -271,9 +371,7 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
                 <div>
                   <div className="text-xs text-muted-foreground">File name preview</div>
                   <div className="text-sm font-medium truncate">
-                    {metadataApplied && metadata.title
-                      ? `${metadata.title}.${format.toLowerCase()}`
-                      : `image.${format.toLowerCase()}`}
+                    {metadataApplied ? `${previewFileName}.${format.toLowerCase()}` : `image.${format.toLowerCase()}`}
                   </div>
                 </div>
               </div>
@@ -307,22 +405,22 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
           <>
             <div className="p-6 border-b border-border">
               <div className="text-xs text-muted-foreground mb-1">STEP 1/2</div>
-              <h2 className="text-xl font-bold">Metadata suggestions</h2>
+              <h2 className="text-2xl font-bold">Metadata suggestions</h2>
               <p className="text-sm text-muted-foreground mt-1">
                 Start by selecting the source information. The metadata will be generated automatically based on your
                 input.
               </p>
             </div>
 
-            <div className="p-6 flex flex-col sm:flex-row gap-6">
+            <div className="p-6 flex flex-col lg:flex-row gap-6">
               {/* Image preview */}
-              <div className="w-full sm:w-40 flex-shrink-0">
+              <div className="w-full lg:w-80 flex-shrink-0 space-y-3">
                 <img
                   src={imageState.currentUrl || "/placeholder.svg"}
                   alt="Preview"
                   className="w-full h-auto rounded-lg border border-border"
                 />
-                <div className="mt-2 flex items-center justify-between text-xs">
+                <div className="flex items-center justify-between text-xs px-2 py-1.5 bg-muted/50 rounded">
                   <span className="text-muted-foreground">
                     {imageState.isAIGenerated ? "Likely" : "Not likely"} to be AI-generated
                   </span>
@@ -330,66 +428,110 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
                     {imageState.isAIGenerated ? "75%" : "3%"}
                   </span>
                 </div>
+                <div className="text-xs text-muted-foreground">
+                  <div className="font-medium mb-1">File name preview:</div>
+                  <div className="text-foreground">{previewFileName}.jpg</div>
+                </div>
               </div>
 
               {/* Form fields */}
-              <div className="flex-1 space-y-4">
+              <div className="flex-1 space-y-5">
                 <div>
                   <label className="flex items-center gap-1 text-sm font-medium mb-2">
-                    Business*
-                    <Info className="w-3 h-3 text-muted-foreground" />
+                    Division/Business name*
+                    <Info className="w-3.5 h-3.5 text-muted-foreground" />
                   </label>
-                  <select
+                  <Select
                     value={sourceInfo.business}
-                    onChange={(e) => setSourceInfo((prev) => ({ ...prev, business: e.target.value }))}
-                    className="w-full p-2 border border-border rounded-lg bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#E30613]"
+                    onValueChange={(value) => setSourceInfo((prev) => ({ ...prev, business: value }))}
                   >
-                    <option value="">Select</option>
-                    {BUSINESS_OPTIONS.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="w-full h-10">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {BUSINESS_OPTIONS.map((opt) => (
+                        <SelectItem key={opt} value={opt}>
+                          {opt}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div>
-                  <label className="flex items-center gap-1 text-sm font-medium mb-2">
-                    Product /Campaign name*
-                    <Info className="w-3 h-3 text-muted-foreground" />
-                  </label>
-                  <input
-                    type="text"
-                    value={sourceInfo.productCampaign}
-                    onChange={(e) => setSourceInfo((prev) => ({ ...prev, productCampaign: e.target.value }))}
-                    placeholder="Type here..."
-                    className="w-full p-2 border border-border rounded-lg bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#E30613]"
-                  />
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-medium">Campaign name</label>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={sourceInfo.campaignEnabled}
+                        onCheckedChange={(checked) =>
+                          setSourceInfo((prev) => ({ ...prev, campaignEnabled: checked, campaign: checked ? prev.campaign : "" }))
+                        }
+                        className="data-[state=checked]:bg-purple-600"
+                      />
+                    </div>
+                  </div>
+                  {sourceInfo.campaignEnabled && (
+                    <input
+                      type="text"
+                      value={sourceInfo.campaign}
+                      onChange={(e) => setSourceInfo((prev) => ({ ...prev, campaign: e.target.value }))}
+                      placeholder="Type here..."
+                      className="w-full p-2 border border-border rounded-lg bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#E30613]"
+                    />
+                  )}
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-medium">Product name</label>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={sourceInfo.productEnabled}
+                        onCheckedChange={(checked) =>
+                          setSourceInfo((prev) => ({ ...prev, productEnabled: checked, product: checked ? prev.product : "" }))
+                        }
+                        className="data-[state=checked]:bg-purple-600"
+                      />
+                    </div>
+                  </div>
+                  {sourceInfo.productEnabled && (
+                    <input
+                      type="text"
+                      value={sourceInfo.product}
+                      onChange={(e) => setSourceInfo((prev) => ({ ...prev, product: e.target.value }))}
+                      placeholder="Type here..."
+                      className="w-full p-2 border border-border rounded-lg bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#E30613]"
+                    />
+                  )}
                 </div>
 
                 <div>
                   <label className="flex items-center gap-1 text-sm font-medium mb-2">
                     Asset type*
-                    <Info className="w-3 h-3 text-muted-foreground" />
+                    <Info className="w-3.5 h-3.5 text-muted-foreground" />
                   </label>
-                  <select
+                  <Select
                     value={sourceInfo.assetType}
-                    onChange={(e) => setSourceInfo((prev) => ({ ...prev, assetType: e.target.value }))}
-                    className="w-full p-2 border border-border rounded-lg bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#E30613]"
+                    onValueChange={(value) => setSourceInfo((prev) => ({ ...prev, assetType: value }))}
                   >
-                    <option value="">Select</option>
-                    {ASSET_TYPE_OPTIONS.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="w-full h-10">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ASSET_TYPE_OPTIONS.map((opt) => (
+                        <SelectItem key={opt} value={opt}>
+                          {opt}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
 
             <div className="p-6 border-t border-border flex justify-between">
-              <Button variant="outline" onClick={() => setStep("download")}>
+              <Button variant="outline" onClick={onClose}>
                 Cancel
               </Button>
               <Button
@@ -417,21 +559,22 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
           <>
             <div className="p-6 border-b border-border">
               <div className="text-xs text-muted-foreground mb-1">STEP 2/2</div>
-              <h2 className="text-xl font-bold">Metadata suggestions</h2>
+              <h2 className="text-2xl font-bold">Metadata suggestions</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Review and edit the AI-generated metadata before applying.
+                Start by selecting the source information. The metadata will be generated automatically based on your
+                input.
               </p>
             </div>
 
-            <div className="p-6 flex flex-col sm:flex-row gap-6">
+            <div className="p-6 flex flex-col lg:flex-row gap-6">
               {/* Image preview */}
-              <div className="w-full sm:w-40 flex-shrink-0">
+              <div className="w-full lg:w-80 flex-shrink-0 space-y-3">
                 <img
                   src={imageState.currentUrl || "/placeholder.svg"}
                   alt="Preview"
                   className="w-full h-auto rounded-lg border border-border"
                 />
-                <div className="mt-2 flex items-center justify-between text-xs">
+                <div className="flex items-center justify-between text-xs px-2 py-1.5 bg-muted/50 rounded">
                   <span className="text-muted-foreground">
                     {imageState.isAIGenerated ? "Likely" : "Not likely"} to be AI-generated
                   </span>
@@ -439,37 +582,51 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
                     {imageState.isAIGenerated ? "75%" : "3%"}
                   </span>
                 </div>
+                <div className="text-xs text-muted-foreground">
+                  <div className="font-medium mb-1">File name preview:</div>
+                  <div className="text-foreground">{previewFileName}.jpg</div>
+                </div>
               </div>
 
               {/* Metadata fields */}
-              <div className="flex-1 space-y-4">
+              <div className="flex-1 space-y-5">
                 <div>
                   <label className="text-sm font-medium mb-2 block">Title</label>
                   <input
                     type="text"
                     value={metadata.title}
-                    onChange={(e) => setMetadata((prev) => ({ ...prev, title: e.target.value }))}
+                    onChange={(e) => {
+                      const value = e.target.value.slice(0, 200)
+                      setMetadata((prev) => ({ ...prev, title: value }))
+                    }}
                     className="w-full p-2 border border-border rounded-lg bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#E30613]"
-                    maxLength={600}
+                    maxLength={200}
                   />
-                  <div className="text-xs text-muted-foreground mt-1 text-right">{metadata.title.length}/600</div>
+                  <div className="text-xs text-muted-foreground mt-1 text-right">
+                    {metadata.title.length}/200
+                  </div>
                 </div>
 
                 <div>
                   <label className="text-sm font-medium mb-2 block">Description</label>
                   <textarea
                     value={metadata.description}
-                    onChange={(e) => setMetadata((prev) => ({ ...prev, description: e.target.value }))}
-                    rows={3}
+                    onChange={(e) => {
+                      const value = e.target.value.slice(0, 400)
+                      setMetadata((prev) => ({ ...prev, description: value }))
+                    }}
+                    rows={4}
                     className="w-full p-2 border border-border rounded-lg bg-background text-sm focus:outline-none focus:ring-2 focus:ring-[#E30613] resize-none"
                     maxLength={400}
                   />
-                  <div className="text-xs text-muted-foreground mt-1 text-right">{metadata.description.length}/400</div>
+                  <div className="text-xs text-muted-foreground mt-1 text-right">
+                    {metadata.description.length}/400
+                  </div>
                 </div>
 
                 <div>
                   <label className="text-sm font-medium mb-2 block">AI suggested tags</label>
-                  <div className="flex flex-wrap gap-2 mb-3">
+                  <div className="flex flex-wrap gap-2">
                     {metadata.tags.map((tag) => (
                       <span
                         key={tag}
@@ -511,8 +668,19 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
                 <ChevronLeft className="w-4 h-4" />
                 Back
               </Button>
-              <Button onClick={applyMetadata} className="bg-[#E30613] hover:bg-[#c70510] text-white">
-                Apply Metadata
+              <Button
+                onClick={applyMetadata}
+                disabled={isApplyingMetadata}
+                className="bg-[#E30613] hover:bg-[#c70510] text-white"
+              >
+                {isApplyingMetadata ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Applying metadata...
+                  </>
+                ) : (
+                  "Apply Metadata"
+                )}
               </Button>
             </div>
           </>
