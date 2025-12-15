@@ -19,6 +19,7 @@ export default function EditorPage() {
 
   const [editorMode, setEditorMode] = useState<EditorMode>("view")
   const [aiEditResult, setAiEditResult] = useState<{ beforeUrl: string; afterUrl: string } | null>(null)
+  const [hasCropPresetSelected, setHasCropPresetSelected] = useState(false)
 
   // Resolve image URL either from query param or from localStorage (used by the upload flow)
   useEffect(() => {
@@ -186,6 +187,7 @@ export default function EditorPage() {
           onAIEditApply={handleAIEditApply}
           onAIEditResult={setAiEditResult}
           onModeChange={handleModeChange}
+          onCropPresetChange={setHasCropPresetSelected}
         />
 
         {/* Controls Row */}
@@ -201,6 +203,7 @@ export default function EditorPage() {
           onCropApply={handleCropApply}
           onAIEditApply={handleAIEditApply}
           imageState={imageState}
+          hasCropPresetSelected={hasCropPresetSelected}
         />
       </main>
     </div>

@@ -1,8 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { Undo2, Redo2, Download } from "lucide-react"
+import { Undo2, Redo2, ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import DownloadModal from "./download-modal"
 import MetadataPromptModal from "./metadata-prompt-modal"
 import { CropIcon, AIIcon, BlurIcon } from "@/components/icons/abb-icons"
@@ -20,6 +21,7 @@ interface ControlsRowProps {
   onCropApply: (croppedUrl: string, width: number, height: number) => void
   onAIEditApply: (editedUrl: string) => void
   imageState: ImageState
+  hasCropPresetSelected?: boolean
 }
 
 export default function ControlsRow({
@@ -32,6 +34,7 @@ export default function ControlsRow({
   onBlur,
   onModeChange,
   imageState,
+  hasCropPresetSelected = false,
 }: ControlsRowProps) {
   const [showMetadataPrompt, setShowMetadataPrompt] = useState(false)
   const [showDownloadModal, setShowDownloadModal] = useState(false)
@@ -39,6 +42,9 @@ export default function ControlsRow({
 
   const isCropMode = editorMode === "crop"
   const isAIEditMode = editorMode === "ai-edit" || editorMode === "ai-result"
+
+  // Show Apply Crop only when in crop mode AND a preset is selected
+  const showApplyCrop = isCropMode && hasCropPresetSelected
 
   const handleDownloadClick = () => {
     setShowMetadataPrompt(true)
@@ -62,73 +68,104 @@ export default function ControlsRow({
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-2">
           {/* Left Group: Undo/Redo */}
           <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onUndo}
-              disabled={!canUndo}
-              className="h-10 w-10 p-0"
-              title="Undo"
-            >
-              <Undo2 className="w-5 h-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onRedo}
-              disabled={!canRedo}
-              className="h-10 w-10 p-0"
-              title="Redo"
-            >
-              <Redo2 className="w-5 h-5" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onUndo}
+                  disabled={!canUndo}
+                  className="h-10 w-10 p-0"
+                >
+                  <Undo2 className="w-5 h-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Undo</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onRedo}
+                  disabled={!canRedo}
+                  className="h-10 w-10 p-0"
+                >
+                  <Redo2 className="w-5 h-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Redo</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
 
-          {/* Center Group: Main Tools - using ABB icons */}
+          {/* Center Group: Main Tools */}
           <div className="flex items-center gap-1 sm:gap-2">
             {/* Crop Button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onModeChange(isCropMode ? "view" : "crop")}
-              className={`h-10 w-10 p-0 rounded-lg ${
-                isCropMode ? "bg-[#7C3AED] hover:bg-[#6D28D9] text-white" : "hover:bg-muted"
-              }`}
-              title="Crop"
-            >
-              <CropIcon className="w-5 h-5" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onModeChange(isCropMode ? "view" : "crop")}
+                  className={`h-10 w-10 p-0 rounded-lg ${
+                    isCropMode ? "bg-[#7C3AED] hover:bg-[#6D28D9] text-white" : "hover:bg-muted"
+                  }`}
+                >
+                  <CropIcon className="w-5 h-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Crop</p>
+              </TooltipContent>
+            </Tooltip>
 
             {/* AI Edit Button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onModeChange(isAIEditMode ? "view" : "ai-edit")}
-              className={`h-10 w-10 p-0 rounded-lg ${
-                isAIEditMode ? "bg-[#7C3AED] hover:bg-[#6D28D9] text-white" : "hover:bg-muted"
-              }`}
-              title="Edit with AI"
-            >
-              <AIIcon className="w-5 h-5" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onModeChange(isAIEditMode ? "view" : "ai-edit")}
+                  className={`h-10 w-10 p-0 rounded-lg ${
+                    isAIEditMode ? "bg-[#7C3AED] hover:bg-[#6D28D9] text-white" : "hover:bg-muted"
+                  }`}
+                >
+                  <AIIcon className="w-5 h-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Change scene</p>
+              </TooltipContent>
+            </Tooltip>
 
             {/* Blur Button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onBlur}
-              className={`h-10 w-10 p-0 rounded-lg ${
-                isBlurred ? "bg-[#7C3AED] hover:bg-[#6D28D9] text-white" : "hover:bg-muted"
-              }`}
-              title="Blur"
-            >
-              <BlurIcon className="w-5 h-5" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onBlur}
+                  className={`h-10 w-10 p-0 rounded-lg ${
+                    isBlurred ? "bg-[#7C3AED] hover:bg-[#6D28D9] text-white" : "hover:bg-muted"
+                  }`}
+                >
+                  <BlurIcon className="w-5 h-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Blur</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
 
-          {/* Right Group: Download or Apply Crop */}
+          {/* Right Group: Export Options or Apply Crop */}
           <div className="flex items-center gap-2">
-            {isCropMode ? (
+            {showApplyCrop ? (
               <Button
                 onClick={() => {
                   const event = new CustomEvent("applyCrop")
@@ -142,10 +179,10 @@ export default function ControlsRow({
               <Button
                 onClick={handleDownloadClick}
                 variant="outline"
-                className="rounded-full px-4 sm:px-6 h-10 text-sm font-medium bg-transparent"
+                className="rounded-full px-4 sm:px-6 h-10 text-sm font-medium bg-transparent border-2 border-foreground"
               >
-                <Download className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">Download</span>
+                <span>Export options</span>
+                <ExternalLink className="w-4 h-4 ml-2" />
               </Button>
             )}
           </div>

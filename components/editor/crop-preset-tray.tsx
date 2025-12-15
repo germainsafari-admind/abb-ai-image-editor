@@ -1,18 +1,45 @@
 "use client"
 
 import type React from "react"
+import { useState } from "react"
 import type { CategoryPreset, CropCategory } from "@/lib/crop-presets"
 
 interface CropPresetTrayProps {
   categories: CropCategory[]
-  selectedCategory: string
+  selectedCategory: string | null
   selectedPreset: CategoryPreset | null
   customRatioWidth: string
   customRatioHeight: string
+  currentCategoryLabel: string
   onSelectCategory: (categoryName: string) => void
   onSelectPreset: (preset: CategoryPreset) => void
   onChangeCustomWidth: (value: string) => void
   onChangeCustomHeight: (value: string) => void
+}
+
+// Fixed slot dimensions - all presets sit in identically-sized slots
+const SLOT_SIZE = 72
+
+/**
+ * Compute inner box dimensions that visually represent the aspect ratio.
+ * Portrait ratios → tall narrow box
+ * Square → square box
+ * Landscape ratios → short wide box
+ */
+const getBoxDimensions = (ratio: number) => {
+  const maxDim = SLOT_SIZE - 8 // leave 4px padding each side
+
+  if (ratio >= 1) {
+    // Landscape or square: width = max, height = max/ratio
+    const w = maxDim
+    const h = Math.max(20, Math.round(maxDim / ratio))
+    return { w, h }
+  } else {
+    // Portrait: height = max, width = max * ratio
+    const h = maxDim
+    const w = Math.max(20, Math.round(maxDim * ratio))
+    return { w, h }
+  }
 }
 
 const CropPresetTray: React.FC<CropPresetTrayProps> = ({
@@ -21,12 +48,43 @@ const CropPresetTray: React.FC<CropPresetTrayProps> = ({
   selectedPreset,
   customRatioWidth,
   customRatioHeight,
+  currentCategoryLabel,
   onSelectCategory,
   onSelectPreset,
   onChangeCustomWidth,
   onChangeCustomHeight,
 }) => {
+  const [hoveredPreset, setHoveredPreset] = useState<CategoryPreset | null>(null)
+
+  // Initial info state – no category selected yet
+  if (!selectedCategory) {
+    return (
+      <div className="mx-auto rounded-2xl border border-border bg-white shadow-xl px-4 py-6 sm:px-8 pointer-events-auto">
+        <div className="text-base font-semibold mb-4">Select media type:</div>
+        <div className="mb-6 rounded-xl bg-[#EEF0FF] px-6 py-7 text-center text-sm text-[#3B3F5C] leading-relaxed">
+          Choose a category to display the cropping presets aligned
+          <br />
+          with its standard formats for each type of media.
+        </div>
+        <div className="flex flex-wrap gap-2 mt-1 text-xs sm:text-sm justify-center sm:justify-start">
+          {categories.map((category) => (
+            <button
+              key={category.name}
+              onClick={() => onSelectCategory(category.name)}
+              className="px-3 py-1.5 rounded-full font-medium transition-all bg-gray-100 text-gray-700 hover:bg-gray-200"
+            >
+              {category.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   const currentCategory = categories.find((cat) => cat.name === selectedCategory) || categories[0]
+
+  // Determine what to show in title - hovered preset takes priority
+  const displayPreset = hoveredPreset || selectedPreset
 
   return (
     <div className="mx-auto rounded-2xl border border-border bg-white/95 backdrop-blur shadow-xl px-4 py-4 sm:px-6 pointer-events-auto">
@@ -35,10 +93,10 @@ const CropPresetTray: React.FC<CropPresetTrayProps> = ({
         <div className="text-sm font-medium mb-4">Custom resolution:</div>
       ) : (
         <div className="text-sm font-medium mb-4">
-          {currentCategory.label} format:
-          {selectedPreset && (
+          {currentCategoryLabel} format:
+          {displayPreset && (
             <span className="text-[#7C3AED] font-medium ml-1">
-              {selectedPreset.label} ({selectedPreset.displayRatio})
+              {displayPreset.label} ({displayPreset.displayRatio})
             </span>
           )}
         </div>
@@ -55,7 +113,7 @@ const CropPresetTray: React.FC<CropPresetTrayProps> = ({
               placeholder="Image width"
               value={customRatioWidth}
               onChange={(e) => onChangeCustomWidth(e.target.value)}
-              className="w-24 px-3 py-2 rounded-lg border border-border text-sm focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
+              className="w-28 px-3 py-2 rounded-lg border border-border text-sm focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
             />
             <span className="text-muted-foreground text-sm">x</span>
             <input
@@ -64,7 +122,7 @@ const CropPresetTray: React.FC<CropPresetTrayProps> = ({
               placeholder="Image height"
               value={customRatioHeight}
               onChange={(e) => onChangeCustomHeight(e.target.value)}
-              className="w-24 px-3 py-2 rounded-lg border border-border text-sm focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
+              className="w-28 px-3 py-2 rounded-lg border border-border text-sm focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
             />
           </div>
           <div className="mt-2 text-xs text-muted-foreground">
@@ -75,29 +133,32 @@ const CropPresetTray: React.FC<CropPresetTrayProps> = ({
         </div>
       ) : (
         currentCategory.presets.length > 0 && (
-          <div className="flex items-end gap-2 mb-4 overflow-x-auto pb-2">
+          <div className="flex items-start gap-2 mb-4 overflow-x-auto pb-2">
             {currentCategory.presets.map((preset) => {
               const isSelected = selectedPreset?.name === preset.name
-              const boxHeight = 48
-              const boxWidth = Math.round(boxHeight * preset.ratio)
+              const { w, h } = getBoxDimensions(preset.ratio)
 
               return (
-                <button
+                <div
                   key={preset.name}
-                  onClick={() => onSelectPreset(preset)}
-                  className={`flex-shrink-0 flex items-center justify-center border-2 rounded-lg transition-all ${
-                    isSelected
-                      ? "border-[#7C3AED] text-[#7C3AED] bg-[#F3E8FF]"
-                      : "border-gray-300 text-gray-500 hover:border-gray-400 bg-white"
-                  }`}
-                  style={{
-                    width: `${Math.max(36, boxWidth)}px`,
-                    height: `${boxHeight}px`,
-                    minWidth: "36px",
-                  }}
+                  className="flex-shrink-0 flex items-start justify-center"
+                  style={{ width: SLOT_SIZE, height: SLOT_SIZE }}
                 >
-                  <span className="text-xs font-medium">{preset.displayRatio}</span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => onSelectPreset(preset)}
+                    onMouseEnter={() => setHoveredPreset(preset)}
+                    onMouseLeave={() => setHoveredPreset(null)}
+                    className={`flex items-center justify-center rounded-lg border-2 transition-all ${
+                      isSelected
+                        ? "border-[#7C3AED] text-[#7C3AED] bg-[#F3E8FF]"
+                        : "border-gray-300 text-gray-400 bg-white hover:border-[#7C3AED] hover:text-[#7C3AED]"
+                    }`}
+                    style={{ width: w, height: h }}
+                  >
+                    <span className="text-[10px] font-medium">{preset.displayRatio}</span>
+                  </button>
+                </div>
               )
             })}
           </div>
@@ -126,5 +187,3 @@ const CropPresetTray: React.FC<CropPresetTrayProps> = ({
 }
 
 export default CropPresetTray
-
-
