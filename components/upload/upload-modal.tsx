@@ -29,30 +29,42 @@ export default function UploadModal({ isOpen, onClose, onImageUploaded }: Upload
       setError(null)
 
       try {
-        // Convert to base64 for local storage
-        const reader = new FileReader()
-        reader.onload = () => {
-          const imageDataUrl = reader.result as string
+        // Upload to Azure blob storage via API
+        const formData = new FormData()
+        formData.append('file', file)
 
-          // Persist last uploaded image if possible, but don't break on quota issues
-          try {
-            localStorage.setItem("lastUploadedImage", imageDataUrl)
-            localStorage.setItem("lastUploadedFileName", file.name)
-          } catch (storageError) {
-            console.warn("Failed to store lastUploadedImage in localStorage", storageError)
-          }
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        })
 
-          onImageUploaded(imageDataUrl)
-          setIsUploading(false)
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Upload failed' }))
+          throw new Error(errorData.error || 'Upload failed')
         }
-        reader.onerror = () => {
-          setError("Failed to read file. Please try again.")
-          setIsUploading(false)
+
+        const data = await response.json()
+        const imageUrl = data.imageUrl
+
+        if (!imageUrl) {
+          throw new Error('No image URL returned from server')
         }
-        reader.readAsDataURL(file)
-      } catch (err) {
-        setError("Upload failed. Please try again.")
+
+        // Store the Azure blob URL and filename for reference
+        try {
+          localStorage.setItem("lastUploadedImage", imageUrl)
+          localStorage.setItem("lastUploadedFileName", data.fileName || file.name)
+        } catch (storageError) {
+          console.warn("Failed to store lastUploadedImage in localStorage", storageError)
+        }
+
+        onImageUploaded(imageUrl)
         setIsUploading(false)
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : "Upload failed. Please try again."
+        setError(errorMessage)
+        setIsUploading(false)
+        console.error('Upload error:', err)
       }
     },
     [onImageUploaded],
