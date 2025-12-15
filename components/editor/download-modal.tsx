@@ -164,6 +164,29 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
 
     setIsGenerating(true)
     try {
+      // Convert blob URLs to data URLs if needed (OpenAI can't access blob URLs)
+      let imageUrlToSend = imageState.currentUrl
+      if (imageState.currentUrl.startsWith("blob:")) {
+        try {
+          const response = await fetch(imageState.currentUrl)
+          const blob = await response.blob()
+          const reader = new FileReader()
+          imageUrlToSend = await new Promise<string>((resolve, reject) => {
+            reader.onloadend = () => {
+              if (typeof reader.result === "string") {
+                resolve(reader.result)
+              } else {
+                reject(new Error("Failed to convert blob to data URL"))
+              }
+            }
+            reader.onerror = reject
+            reader.readAsDataURL(blob)
+          })
+        } catch (error) {
+          throw new Error("Failed to process image. Please try again.")
+        }
+      }
+
       // Build context string for API
       const contextParts: string[] = []
       if (sourceInfo.business) contextParts.push(sourceInfo.business)
@@ -175,7 +198,7 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          imageUrl: imageState.currentUrl,
+          imageUrl: imageUrlToSend,
           sourceInformation: {
             business: sourceInfo.business,
             productCampaign: [sourceInfo.campaign, sourceInfo.product].filter(Boolean).join(", ") || "",
@@ -184,7 +207,10 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
         }),
       })
 
-      if (!response.ok) throw new Error("Failed to generate metadata")
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Failed to generate metadata" }))
+        throw new Error(errorData.error || "Failed to generate metadata")
+      }
 
       const result = await response.json()
 
@@ -197,6 +223,8 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
       setStep("metadata-step2")
     } catch (error) {
       console.error("Metadata generation error:", error)
+      const errorMessage = error instanceof Error ? error.message : "Failed to generate metadata. Please try again."
+      alert(errorMessage)
     } finally {
       setIsGenerating(false)
     }

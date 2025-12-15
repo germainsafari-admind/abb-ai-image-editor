@@ -125,6 +125,7 @@ export async function POST(request: NextRequest) {
     const result = await analyzeImageWithOpenAI(imageUrl, sourceInformation)
 
     return NextResponse.json({
+      title: result.title,
       description: result.description,
       tags: result.tags,
       timestamp: Date.now(),
