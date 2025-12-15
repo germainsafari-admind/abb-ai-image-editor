@@ -61,7 +61,7 @@ const CropPresetTray: React.FC<CropPresetTrayProps> = ({
     return (
       <div className="mx-auto rounded-2xl border border-border bg-white shadow-xl px-4 py-6 sm:px-8 pointer-events-auto">
         <div className="text-base font-semibold mb-4">Select media type:</div>
-        <div className="mb-6 rounded-xl bg-[#EEF0FF] px-6 py-7 text-center text-sm text-[#3B3F5C] leading-relaxed">
+        <div className="mb-6 rounded-xl bg-[#E4E7FF] px-6 py-7 text-center text-[14px] leading-[1.5] text-[#3B3F5C] font-normal">
           Choose a category to display the cropping presets aligned
           <br />
           with its standard formats for each type of media.

@@ -1,10 +1,34 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
+import localFont from 'next/font/local'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 
-const _geist = Geist({ subsets: ["latin"] });
-const _geistMono = Geist_Mono({ subsets: ["latin"] });
+const abbVoice = localFont({
+  src: [
+    {
+      path: '../public/WOFF/ABBvoice_W_Lt.woff',
+      weight: '300',
+      style: 'normal',
+    },
+    {
+      path: '../public/WOFF/ABBvoice_W_Rg.woff',
+      weight: '400',
+      style: 'normal',
+    },
+    {
+      path: '../public/WOFF/ABBvoice_W_Md.woff',
+      weight: '500',
+      style: 'normal',
+    },
+    {
+      path: '../public/WOFF/ABBvoice_W_Bd.woff',
+      weight: '700',
+      style: 'normal',
+    },
+  ],
+  variable: '--font-abb-voice',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: 'ABB AI Image Editor',
@@ -22,7 +46,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={abbVoice.variable}>
       <body className={`font-sans antialiased`}>
         {children}
         <Analytics />

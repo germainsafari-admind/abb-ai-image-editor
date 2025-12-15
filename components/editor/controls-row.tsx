@@ -66,11 +66,11 @@ export default function ControlsRow({
     <>
       {/* Controls container - matches image container width */}
       <div className="flex justify-center px-4 sm:px-6" style={{ marginTop: "10px", marginBottom: "24px" }}>
-        <div 
+        <div
           className="w-full max-w-5xl flex justify-center"
         >
-          <div 
-            className="w-full flex items-center justify-between gap-2 sm:gap-3 bg-[#F4F5F7] rounded-full px-4 sm:px-5 py-2.5"
+          <div
+            className="w-full flex items-center justify-between gap-2 sm:gap-3 bg-[#EFF1F5] rounded-full px-4 sm:px-5 py-2.5"
             style={{
               boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06)',
             }}
@@ -84,7 +84,7 @@ export default function ControlsRow({
                     size="sm"
                     onClick={onUndo}
                     disabled={!canUndo}
-                    className="h-9 w-9 p-0 rounded-full text-gray-700 hover:text-gray-900 hover:bg-gray-100"
+                    className="h-9 w-9 p-0 rounded-full text-gray-800 hover:text-gray-950 hover:bg-gray-200"
                   >
                     <Undo2 className="w-[18px] h-[18px]" />
                   </Button>
@@ -101,7 +101,7 @@ export default function ControlsRow({
                     size="sm"
                     onClick={onRedo}
                     disabled={!canRedo}
-                    className="h-9 w-9 p-0 rounded-full text-gray-700 hover:text-gray-900 hover:bg-gray-100"
+                    className="h-9 w-9 p-0 rounded-full text-gray-800 hover:text-gray-950 hover:bg-gray-200"
                   >
                     <Redo2 className="w-[18px] h-[18px]" />
                   </Button>
@@ -124,7 +124,7 @@ export default function ControlsRow({
                     className={`h-9 w-9 p-0 rounded-full ${
                       isCropMode
                         ? "bg-[#7C3AED] hover:bg-[#6D28D9] text-white"
-                        : "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
+                        : "text-gray-800 hover:text-gray-950 hover:bg-gray-200"
                     }`}
                   >
                     <CropIcon className="w-[18px] h-[18px]" />
@@ -145,7 +145,7 @@ export default function ControlsRow({
                     className={`h-9 w-9 p-0 rounded-full ${
                       isAIEditMode
                         ? "bg-[#7C3AED] hover:bg-[#6D28D9] text-white"
-                        : "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
+                        : "text-gray-800 hover:text-gray-950 hover:bg-gray-200"
                     }`}
                   >
                     <AIIcon className="w-[18px] h-[18px]" />
@@ -166,7 +166,7 @@ export default function ControlsRow({
                     className={`h-9 w-9 p-0 rounded-full ${
                       isBlurred
                         ? "bg-[#7C3AED] hover:bg-[#6D28D9] text-white"
-                        : "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
+                        : "text-gray-800 hover:text-gray-950 hover:bg-gray-200"
                     }`}
                   >
                     <BlurIcon className="w-[18px] h-[18px]" />
@@ -186,7 +186,7 @@ export default function ControlsRow({
                     const event = new CustomEvent("applyCrop")
                     window.dispatchEvent(event)
                   }}
-                  className="bg-[#E30613] hover:bg-[#c70510] text-white rounded-full px-4 sm:px-5 h-9 text-sm font-medium"
+                  className="bg-[#E30613] hover:bg-[#c70510] text-white rounded-full px-4 sm:px-5 h-9 text-sm font-semibold"
                 >
                   Apply Crop
                 </Button>
@@ -194,7 +194,7 @@ export default function ControlsRow({
                 <Button
                   onClick={handleDownloadClick}
                   variant="outline"
-                  className="rounded-full px-4 sm:px-5 h-9 text-sm font-medium bg-transparent border border-gray-300 text-gray-700 hover:text-gray-900 hover:bg-gray-50 hover:border-gray-400"
+                  className="rounded-full px-4 sm:px-5 h-9 text-sm font-semibold bg-white border border-gray-300 text-gray-800 hover:text-gray-950 hover:bg-gray-100 hover:border-gray-400"
                 >
                   <span>Export options</span>
                   <ExternalLink className="w-3.5 h-3.5 ml-2" />

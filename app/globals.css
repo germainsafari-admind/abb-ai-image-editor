@@ -76,8 +76,9 @@
 }
 
 @theme inline {
-  --font-sans: 'Geist', 'Geist Fallback';
-  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+  /* Use ABBvoice provided by next/font/local (see app/layout.tsx) */
+  --font-sans: var(--font-abb-voice);
+  --font-mono: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
