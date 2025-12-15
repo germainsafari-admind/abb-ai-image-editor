@@ -16,12 +16,24 @@ export default function EditorPage() {
   const [editHistory, setEditHistory] = useState<EditHistoryItem[]>([])
   const [historyIndex, setHistoryIndex] = useState(-1)
   const [showBlurNotification, setShowBlurNotification] = useState(false)
+  const [showColorCorrectionBanner, setShowColorCorrectionBanner] = useState(false)
 
   const [editorMode, setEditorMode] = useState<EditorMode>("view")
   const [aiEditResult, setAiEditResult] = useState<{ beforeUrl: string; afterUrl: string } | null>(null)
   const [hasCropPresetSelected, setHasCropPresetSelected] = useState(false)
 
-  // Resolve image URL either from query param or from localStorage (used by the upload flow)
+  // Check for color correction banner flag
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const showBanner = window.localStorage.getItem("showColorCorrectionBanner")
+      if (showBanner === "true") {
+        setShowColorCorrectionBanner(true)
+        window.localStorage.removeItem("showColorCorrectionBanner")
+      }
+    }
+  }, [])
+
+  // Resolve image URL either from query param or from localStorage
   useEffect(() => {
     const fromParam = imageParam
     if (fromParam) {
@@ -44,7 +56,6 @@ export default function EditorPage() {
     const img = new Image()
     img.crossOrigin = "anonymous"
     img.onload = () => {
-      // Get original filename from localStorage if available
       const originalFileName =
         typeof window !== "undefined" ? window.localStorage.getItem("lastUploadedFileName") || undefined : undefined
 
@@ -155,6 +166,39 @@ export default function EditorPage() {
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
 
+      {/* Color Correction Info Banner */}
+      {showColorCorrectionBanner && (
+        <div 
+          className="px-4 sm:px-6 mt-4 animate-slide-down"
+          style={{
+            animation: 'slideDown 0.4s ease-out forwards',
+          }}
+        >
+          <div className="max-w-5xl mx-auto bg-[#E8F4FD] rounded-xl px-4 py-3 flex items-center gap-3">
+            <div className="flex-shrink-0">
+              <svg className="w-5 h-5 text-[#0066CC]" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fillRule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+            <p className="text-sm text-gray-700 flex-1">
+              Your image has been automatically color corrected.
+            </p>
+            <button
+              onClick={() => setShowColorCorrectionBanner(false)}
+              className="flex-shrink-0 text-gray-500 hover:text-gray-700 transition-colors p-1"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
       {showBlurNotification && (
         <div className="bg-blue-50 border-b border-blue-200 px-4 py-2">
           <div className="max-w-5xl mx-auto flex items-center gap-2 text-sm text-blue-800">
@@ -190,7 +234,7 @@ export default function EditorPage() {
           onCropPresetChange={setHasCropPresetSelected}
         />
 
-        {/* Controls Row */}
+        {/* Controls Row - matches image container max-width */}
         <ControlsRow
           canUndo={historyIndex > 0}
           canRedo={historyIndex < editHistory.length - 1}

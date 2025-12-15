@@ -22,6 +22,7 @@ interface ControlsRowProps {
   onAIEditApply: (editedUrl: string) => void
   imageState: ImageState
   hasCropPresetSelected?: boolean
+  containerWidth?: number | null
 }
 
 export default function ControlsRow({
@@ -43,7 +44,6 @@ export default function ControlsRow({
   const isCropMode = editorMode === "crop"
   const isAIEditMode = editorMode === "ai-edit" || editorMode === "ai-result"
 
-  // Show Apply Crop only when in crop mode AND a preset is selected
   const showApplyCrop = isCropMode && hasCropPresetSelected
 
   const handleDownloadClick = () => {
@@ -64,127 +64,137 @@ export default function ControlsRow({
 
   return (
     <>
-      <div className="border-t border-border bg-muted/30 px-4 sm:px-6 py-3 sm:py-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between gap-2">
-          {/* Left Group: Undo/Redo */}
-          <div className="flex items-center gap-1">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onUndo}
-                  disabled={!canUndo}
-                  className="h-10 w-10 p-0"
-                >
-                  <Undo2 className="w-5 h-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Undo</p>
-              </TooltipContent>
-            </Tooltip>
+      {/* Controls container - matches image container width */}
+      <div className="flex justify-center px-4 sm:px-6" style={{ marginTop: '14px', marginBottom: '24px' }}>
+        <div 
+          className="w-full max-w-5xl flex justify-center"
+        >
+          <div 
+            className="w-full flex items-center justify-between gap-2 sm:gap-3 bg-white rounded-full px-4 sm:px-5 py-2.5"
+            style={{
+              boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06)',
+            }}
+          >
+            {/* Left Group: Undo/Redo */}
+            <div className="flex items-center gap-0.5">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onUndo}
+                    disabled={!canUndo}
+                    className="h-9 w-9 p-0 rounded-full hover:bg-gray-100"
+                  >
+                    <Undo2 className="w-[18px] h-[18px]" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Undo</p>
+                </TooltipContent>
+              </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onRedo}
-                  disabled={!canRedo}
-                  className="h-10 w-10 p-0"
-                >
-                  <Redo2 className="w-5 h-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Redo</p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onRedo}
+                    disabled={!canRedo}
+                    className="h-9 w-9 p-0 rounded-full hover:bg-gray-100"
+                  >
+                    <Redo2 className="w-[18px] h-[18px]" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Redo</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
 
-          {/* Center Group: Main Tools */}
-          <div className="flex items-center gap-1 sm:gap-2">
-            {/* Crop Button */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onModeChange(isCropMode ? "view" : "crop")}
-                  className={`h-10 w-10 p-0 rounded-lg ${
-                    isCropMode ? "bg-[#7C3AED] hover:bg-[#6D28D9] text-white" : "hover:bg-muted"
-                  }`}
-                >
-                  <CropIcon className="w-5 h-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Crop</p>
-              </TooltipContent>
-            </Tooltip>
+            {/* Center Group: Main Tools */}
+            <div className="flex items-center gap-1">
+              {/* Crop Button */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onModeChange(isCropMode ? "view" : "crop")}
+                    className={`h-9 w-9 p-0 rounded-full ${
+                      isCropMode ? "bg-[#7C3AED] hover:bg-[#6D28D9] text-white" : "hover:bg-gray-100"
+                    }`}
+                  >
+                    <CropIcon className="w-[18px] h-[18px]" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Crop</p>
+                </TooltipContent>
+              </Tooltip>
 
-            {/* AI Edit Button */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onModeChange(isAIEditMode ? "view" : "ai-edit")}
-                  className={`h-10 w-10 p-0 rounded-lg ${
-                    isAIEditMode ? "bg-[#7C3AED] hover:bg-[#6D28D9] text-white" : "hover:bg-muted"
-                  }`}
-                >
-                  <AIIcon className="w-5 h-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Change scene</p>
-              </TooltipContent>
-            </Tooltip>
+              {/* AI Edit Button */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onModeChange(isAIEditMode ? "view" : "ai-edit")}
+                    className={`h-9 w-9 p-0 rounded-full ${
+                      isAIEditMode ? "bg-[#7C3AED] hover:bg-[#6D28D9] text-white" : "hover:bg-gray-100"
+                    }`}
+                  >
+                    <AIIcon className="w-[18px] h-[18px]" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Change scene</p>
+                </TooltipContent>
+              </Tooltip>
 
-            {/* Blur Button */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onBlur}
-                  className={`h-10 w-10 p-0 rounded-lg ${
-                    isBlurred ? "bg-[#7C3AED] hover:bg-[#6D28D9] text-white" : "hover:bg-muted"
-                  }`}
-                >
-                  <BlurIcon className="w-5 h-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Blur</p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
+              {/* Blur Button */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onBlur}
+                    className={`h-9 w-9 p-0 rounded-full ${
+                      isBlurred ? "bg-[#7C3AED] hover:bg-[#6D28D9] text-white" : "hover:bg-gray-100"
+                    }`}
+                  >
+                    <BlurIcon className="w-[18px] h-[18px]" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Blur</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
 
-          {/* Right Group: Export Options or Apply Crop */}
-          <div className="flex items-center gap-2">
-            {showApplyCrop ? (
-              <Button
-                onClick={() => {
-                  const event = new CustomEvent("applyCrop")
-                  window.dispatchEvent(event)
-                }}
-                className="bg-[#E30613] hover:bg-[#c70510] text-white rounded-full px-4 sm:px-6 h-10 text-sm font-medium"
-              >
-                Apply Crop
-              </Button>
-            ) : (
-              <Button
-                onClick={handleDownloadClick}
-                variant="outline"
-                className="rounded-full px-4 sm:px-6 h-10 text-sm font-medium bg-transparent border-2 border-foreground"
-              >
-                <span>Export options</span>
-                <ExternalLink className="w-4 h-4 ml-2" />
-              </Button>
-            )}
+            {/* Right Group: Export Options or Apply Crop */}
+            <div className="flex items-center">
+              {showApplyCrop ? (
+                <Button
+                  onClick={() => {
+                    const event = new CustomEvent("applyCrop")
+                    window.dispatchEvent(event)
+                  }}
+                  className="bg-[#E30613] hover:bg-[#c70510] text-white rounded-full px-4 sm:px-5 h-9 text-sm font-medium"
+                >
+                  Apply Crop
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleDownloadClick}
+                  variant="outline"
+                  className="rounded-full px-4 sm:px-5 h-9 text-sm font-medium bg-transparent border border-gray-300 hover:bg-gray-50 hover:border-gray-400"
+                >
+                  <span>Export options</span>
+                  <ExternalLink className="w-3.5 h-3.5 ml-2" />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>
