@@ -65,7 +65,7 @@ export default function ControlsRow({
   return (
     <>
       {/* Controls container - matches image container width */}
-      <div className="flex justify-center px-4 sm:px-6" style={{ marginTop: "10px", marginBottom: "24px" }}>
+      <div className="flex justify-center px-4 sm:px-6" style={{ marginTop: "1px", marginBottom: "24px" }}>
         <div
           className="w-full max-w-5xl flex justify-center"
         >

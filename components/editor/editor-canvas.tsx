@@ -453,7 +453,7 @@ export default function EditorCanvas({
 
       <div
         ref={containerRef}
-        className="flex-1 flex items-center justify-center px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8 overflow-auto"
+        className="flex-1 flex items-center justify-center px-4 pt-4 pb-2 sm:px-6 sm:pt-6 sm:pb-3 lg:px-8 lg:pt-8 lg:pb-4 overflow-auto"
       >
         {/* AI Result Split View */}
         {editorMode === "ai-result" && aiEditResult && (
@@ -641,7 +641,10 @@ export default function EditorCanvas({
             {/* Crop format tray – floating overlay at bottom of image
                 Show when: no preset selected OR custom mode (to show inputs) */}
             {editorMode === "crop" && (!selectedPreset || isCustom) && (
-              <div className="absolute inset-x-0 bottom-0 flex justify-center pointer-events-none pb-4">
+              <div
+                className="absolute inset-x-0 bottom-0 flex justify-center pointer-events-none pb-4"
+                style={{ transform: "translateY(24px)" }}
+              >
                 <div className="w-full max-w-3xl px-4">
                   <CropPresetTray
                     categories={CROP_CATEGORIES}

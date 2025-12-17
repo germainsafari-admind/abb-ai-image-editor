@@ -89,3 +89,6 @@ logs
 # Turbo
 .turbo
 
+# Jupyter Notebooks
+*.ipynb
+.ipynb_checkpoints
