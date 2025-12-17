@@ -54,7 +54,7 @@ AZURE_STORAGE_CONNECTION_STRING=your_azure_connection_string
 AZURE_BLOB_CONTAINER=images
 
 # Flux API
-FLUX_API_KEY=your_flux_api_key
+FLUX_KONTEXT_API_KEY=your_flux_api_key
 ```
 
 ## Development
@@ -154,7 +154,7 @@ Retrieve metadata from an image.
 |----------|-------------|----------|
 | `AZURE_STORAGE_CONNECTION_STRING` | Azure Storage connection string | Yes |
 | `AZURE_BLOB_CONTAINER` | Azure Blob container name | No (defaults to 'images') |
-| `FLUX_API_KEY` | Flux API key for AI editing | Yes |
+| `FLUX_KONTEXT_API_KEY` | Flux API key for AI editing | Yes |
 
 ## Contributing
 

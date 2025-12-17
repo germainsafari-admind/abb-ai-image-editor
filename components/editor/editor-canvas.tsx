@@ -378,6 +378,9 @@ export default function EditorCanvas({
           imageUrl: imageState.currentUrl,
           prompt: aiPrompt,
           presets: [],
+          // Pass original dimensions to preserve aspect ratio
+          width: imageState.width,
+          height: imageState.height,
         }),
       })
 

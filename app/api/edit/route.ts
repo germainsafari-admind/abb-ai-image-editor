@@ -1,9 +1,57 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { uploadFile } from "@/lib/azure-blob"
 
-async function callFluxAPI(imageUrl: string, prompt: string, presets: string[]): Promise<string> {
-  const fluxApiKey = process.env.FLUX_API_KEY
+// Map aspect ratio to closest supported Flux API ratio
+function getClosestAspectRatio(width: number, height: number): string {
+  const ratio = width / height
+  
+  // Flux API supported aspect ratios
+  const supportedRatios: { [key: string]: number } = {
+    "21:9": 21 / 9,   // 2.33
+    "16:9": 16 / 9,   // 1.78
+    "3:2": 3 / 2,     // 1.5
+    "4:3": 4 / 3,     // 1.33
+    "1:1": 1,         // 1.0
+    "3:4": 3 / 4,     // 0.75
+    "2:3": 2 / 3,     // 0.67
+    "9:16": 9 / 16,   // 0.56
+    "9:21": 9 / 21,   // 0.43
+  }
+  
+  let closestRatio = "1:1"
+  let minDiff = Infinity
+  
+  for (const [ratioStr, ratioValue] of Object.entries(supportedRatios)) {
+    const diff = Math.abs(ratio - ratioValue)
+    if (diff < minDiff) {
+      minDiff = diff
+      closestRatio = ratioStr
+    }
+  }
+  
+  return closestRatio
+}
+
+// Download image from URL and return as Buffer
+async function downloadImage(url: string): Promise<Buffer> {
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(`Failed to download image: ${response.status}`)
+  }
+  const arrayBuffer = await response.arrayBuffer()
+  return Buffer.from(arrayBuffer)
+}
+
+async function callFluxAPI(
+  imageUrl: string, 
+  prompt: string, 
+  presets: string[],
+  width?: number,
+  height?: number
+): Promise<string> {
+  const fluxApiKey = process.env.FLUX_KONTEXT_API_KEY
   if (!fluxApiKey) {
-    throw new Error("FLUX_API_KEY not configured. Please add your Flux API key.")
+    throw new Error("FLUX_KONTEXT_API_KEY not configured. Please add your Flux API key.")
   }
 
   // Build the prompt with presets
@@ -11,6 +59,11 @@ async function callFluxAPI(imageUrl: string, prompt: string, presets: string[]):
   if (presets.includes("remove-bg")) fullPrompt = "Remove the background completely, make it transparent"
   if (presets.includes("add-object")) fullPrompt += " Add complementary objects naturally"
   if (presets.includes("change-bg")) fullPrompt += " Change to a professional studio background"
+
+  // Calculate aspect ratio from original image dimensions, default to 1:1 if not provided
+  const aspectRatio = (width && height) ? getClosestAspectRatio(width, height) : "1:1"
+  
+  console.log(`Using aspect ratio: ${aspectRatio} for original dimensions ${width}x${height}`)
 
   try {
     // Call BFL Flux Kontext API for image editing
@@ -23,7 +76,7 @@ async function callFluxAPI(imageUrl: string, prompt: string, presets: string[]):
       body: JSON.stringify({
         prompt: fullPrompt,
         input_image: imageUrl,
-        aspect_ratio: "1:1",
+        aspect_ratio: aspectRatio,
         safety_tolerance: 2,
         output_format: "png",
       }),
@@ -35,7 +88,7 @@ async function callFluxAPI(imageUrl: string, prompt: string, presets: string[]):
         throw new Error("Insufficient credits. Please add more credits to your Flux account.")
       }
       if (response.status === 401) {
-        throw new Error("Invalid API key. Please check your FLUX_API_KEY.")
+        throw new Error("Invalid API key. Please check your FLUX_KONTEXT_API_KEY.")
       }
       throw new Error(errorData.message || `Flux API error: ${response.status}`)
     }
@@ -84,9 +137,32 @@ async function pollForResult(taskId: string, apiKey: string): Promise<string> {
   throw new Error("Generation timed out. Please try again.")
 }
 
+// Upload the result image to Azure to avoid CORS issues with BFL CDN
+async function uploadToAzure(imageUrl: string): Promise<string> {
+  try {
+    // Download the image from BFL CDN
+    const imageBuffer = await downloadImage(imageUrl)
+    
+    // Generate a unique filename
+    const timestamp = Date.now()
+    const randomId = Math.random().toString(36).substring(2, 8)
+    const fileName = `ai-edited/${timestamp}-${randomId}.png`
+    
+    // Upload to Azure Blob Storage
+    const azureUrl = await uploadFile(imageBuffer, fileName)
+    
+    console.log(`Uploaded AI-edited image to Azure: ${azureUrl}`)
+    return azureUrl
+  } catch (error) {
+    console.error("Failed to upload to Azure, returning original URL:", error)
+    // If Azure upload fails, return the original URL as fallback
+    return imageUrl
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const { imageUrl, prompt, presets } = await request.json()
+    const { imageUrl, prompt, presets, width, height } = await request.json()
 
     if (!imageUrl) {
       return NextResponse.json({ error: "Missing image URL" }, { status: 400 })
@@ -96,7 +172,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Please provide a prompt or select a preset" }, { status: 400 })
     }
 
-    const editedImageUrl = await callFluxAPI(imageUrl, prompt || "", presets || [])
+    // Call Flux API with original image dimensions for proper aspect ratio
+    const fluxResultUrl = await callFluxAPI(imageUrl, prompt || "", presets || [], width, height)
+    
+    // Upload the result to Azure to avoid CORS issues with BFL CDN
+    const editedImageUrl = await uploadToAzure(fluxResultUrl)
 
     return NextResponse.json({
       editedImageUrl,
