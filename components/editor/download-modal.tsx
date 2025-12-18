@@ -259,33 +259,80 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
   const handleDownload = async () => {
     setIsDownloading(true)
     try {
-      const canvas = document.createElement("canvas")
-      const ctx = canvas.getContext("2d")
-      if (!ctx) throw new Error("Canvas not supported")
+      let dataUrl: string
 
-      const img = new Image()
-      img.crossOrigin = "anonymous"
-
-      await new Promise((resolve, reject) => {
-        img.onload = resolve
-        img.onerror = reject
-        img.src = imageState.currentUrl
-      })
-
-      canvas.width = img.width
-      canvas.height = img.height
-
+      // When transparent background is requested for PNG, call the server-side
+      // background removal API which uses REMOVE_BG_API_KEY.
       if (transparentBg && format === "PNG") {
-        ctx.drawImage(img, 0, 0)
-      } else {
-        ctx.fillStyle = "#FFFFFF"
-        ctx.fillRect(0, 0, canvas.width, canvas.height)
-        ctx.drawImage(img, 0, 0)
-      }
+        let imageDataUrl = imageState.currentUrl
 
-      // Get base64 data
-      const mimeType = format === "PNG" ? "image/png" : "image/jpeg"
-      let dataUrl = canvas.toDataURL(mimeType, 0.95)
+        // Ensure we send a data URL (remove.bg and our API cannot access blob: URLs)
+        if (!imageDataUrl.startsWith("data:")) {
+          try {
+            const response = await fetch(imageState.currentUrl)
+            const blob = await response.blob()
+            const reader = new FileReader()
+            imageDataUrl = await new Promise<string>((resolve, reject) => {
+              reader.onloadend = () => {
+                if (typeof reader.result === "string") {
+                  resolve(reader.result)
+                } else {
+                  reject(new Error("Failed to convert image to data URL"))
+                }
+              }
+              reader.onerror = reject
+              reader.readAsDataURL(blob)
+            })
+          } catch (error) {
+            console.error("Failed to prepare image for background removal:", error)
+            throw new Error("Failed to prepare image for background removal. Please try again.")
+          }
+        }
+
+        const removeBgResponse = await fetch("/api/remove-bg", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageDataUrl }),
+        })
+
+        if (!removeBgResponse.ok) {
+          const errorData = await removeBgResponse.json().catch(() => ({
+            error: "Failed to remove background",
+          }))
+          throw new Error(errorData.error || "Failed to remove background. Please try again.")
+        }
+
+        const resultBlob = await removeBgResponse.blob()
+        dataUrl = URL.createObjectURL(resultBlob)
+      } else {
+        const canvas = document.createElement("canvas")
+        const ctx = canvas.getContext("2d")
+        if (!ctx) throw new Error("Canvas not supported")
+
+        const img = new Image()
+        img.crossOrigin = "anonymous"
+
+        await new Promise((resolve, reject) => {
+          img.onload = resolve
+          img.onerror = reject
+          img.src = imageState.currentUrl
+        })
+
+        canvas.width = img.width
+        canvas.height = img.height
+
+        if (transparentBg && format === "PNG") {
+          ctx.drawImage(img, 0, 0)
+        } else {
+          ctx.fillStyle = "#FFFFFF"
+          ctx.fillRect(0, 0, canvas.width, canvas.height)
+          ctx.drawImage(img, 0, 0)
+        }
+
+        // Get base64 data
+        const mimeType = format === "PNG" ? "image/png" : "image/jpeg"
+        dataUrl = canvas.toDataURL(mimeType, 0.95)
+      }
 
       // If metadata is applied, we need to embed it
       if (metadataApplied && metadata.title) {
