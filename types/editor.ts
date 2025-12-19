@@ -6,6 +6,7 @@ export interface ImageState {
   isBlurred: boolean
   isAIGenerated: boolean
   originalFileName?: string
+  aiGeneratedProbability?: number // Percentage (0-100) indicating likelihood of AI generation
 }
 
 export interface EditHistoryItem extends ImageState {

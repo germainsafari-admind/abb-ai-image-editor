@@ -47,7 +47,13 @@ export default function ControlsRow({
   const showApplyCrop = isCropMode && hasCropPresetSelected
 
   const handleDownloadClick = () => {
-    setShowMetadataPrompt(true)
+    // If blur is the last operation, skip metadata prompt and go directly to download modal
+    if (isBlurred) {
+      setSkipMetadata(true)
+      setShowDownloadModal(true)
+    } else {
+      setShowMetadataPrompt(true)
+    }
   }
 
   const handleNoThanks = () => {

@@ -30,6 +30,18 @@ const abbVoice = localFont({
   display: 'swap',
 })
 
+const abbVoiceDisplay = localFont({
+  src: [
+    {
+      path: '../public/WOFF/ABBvoiceDisplay_W_SBd.woff',
+      weight: '600',
+      style: 'normal',
+    },
+  ],
+  variable: '--font-abb-voice-display',
+  display: 'swap',
+})
+
 export const metadata: Metadata = {
   title: 'ABB AI Image Editor',
   description: 'Professional AI-powered image editing for ABB',
@@ -46,7 +58,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={abbVoice.variable}>
+    <html lang="en" className={`${abbVoice.variable} ${abbVoiceDisplay.variable}`}>
       <body className={`font-sans antialiased`}>
         {children}
         <Analytics />

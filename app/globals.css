@@ -169,3 +169,42 @@
 .animate-slide-down {
   animation: slideDown 0.4s ease-out forwards;
 }
+
+/* AI Loading Popup Animations */
+@keyframes ai-rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ai-pulse {
+  0%, 100% {
+    stroke-dasharray: 12 52;
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  50% {
+    stroke-dasharray: 25 39;
+    stroke-dashoffset: -10;
+    opacity: 0.85;
+  }
+}
+
+.ai-loader-rotate {
+  animation: ai-rotate 2s linear infinite;
+}
+
+.ai-arc-red {
+  stroke-dasharray: 12 52;
+  stroke-dashoffset: 0;
+  animation: ai-pulse 1.5s ease-in-out infinite;
+}
+
+.ai-arc-violet {
+  stroke-dasharray: 12 52;
+  stroke-dashoffset: 32;
+  animation: ai-pulse 1.5s ease-in-out infinite 0.3s;
+}

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import { X, DownloadIcon, ChevronRight, ChevronLeft, Info, Loader2 } from "lucide-react"
+import { X, DownloadIcon, ChevronRight, ChevronLeft, Info, Loader2, ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -125,6 +125,12 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
   const [isGenerating, setIsGenerating] = useState(false)
   const [metadataApplied, setMetadataApplied] = useState(false)
   const [isApplyingMetadata, setIsApplyingMetadata] = useState(false)
+  
+  // AI detection state - use imageState values as defaults, but allow local override
+  const [aiDetectionResult, setAiDetectionResult] = useState<{
+    isAIGenerated: boolean
+    probability: number
+  } | null>(null)
 
   // Reset state when modal opens or closes
   useEffect(() => {
@@ -144,11 +150,107 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
         description: "",
         tags: [],
       })
+      setTransparentBg(false)
+      setAiDetectionResult(null) // Reset AI detection when modal closes
     } else if (!skipToDownload) {
       // If not skipping, start at metadata step 1
       setStep("metadata-step1")
     }
-  }, [isOpen, skipToDownload])
+    // Reset transparent background when blur is active
+    if (isOpen && imageState.isBlurred) {
+      setTransparentBg(false)
+    }
+  }, [isOpen, skipToDownload, imageState.isBlurred])
+
+  // Detect AI when entering metadata step 1, if not already detected via AI edit
+  useEffect(() => {
+    // Only detect if:
+    // 1. Modal is open
+    // 2. We're on metadata-step1
+    // 3. Image was not already flagged as AI-generated (from AI edit)
+    // 4. We haven't already detected it
+    if (isOpen && step === "metadata-step1" && !imageState.isAIGenerated && aiDetectionResult === null) {
+      const detectAI = async () => {
+        try {
+          // Convert blob URLs to data URLs if needed
+          let imageUrlToSend = imageState.currentUrl
+          if (imageState.currentUrl.startsWith("blob:")) {
+            try {
+              const response = await fetch(imageState.currentUrl)
+              const blob = await response.blob()
+              const reader = new FileReader()
+              imageUrlToSend = await new Promise<string>((resolve, reject) => {
+                reader.onloadend = () => {
+                  if (typeof reader.result === "string") {
+                    resolve(reader.result)
+                  } else {
+                    reject(new Error("Failed to convert blob to data URL"))
+                  }
+                }
+                reader.onerror = reject
+                reader.readAsDataURL(blob)
+              })
+            } catch (error) {
+              console.error("Failed to prepare image for AI detection:", error)
+              return // Silently fail - use default values
+            }
+          }
+
+          // If it's not a data URL, try to convert it
+          if (!imageUrlToSend.startsWith("data:")) {
+            try {
+              const response = await fetch(imageUrlToSend)
+              const blob = await response.blob()
+              const reader = new FileReader()
+              imageUrlToSend = await new Promise<string>((resolve, reject) => {
+                reader.onloadend = () => {
+                  if (typeof reader.result === "string") {
+                    resolve(reader.result)
+                  } else {
+                    reject(new Error("Failed to convert to data URL"))
+                  }
+                }
+                reader.onerror = reject
+                reader.readAsDataURL(blob)
+              })
+            } catch (error) {
+              console.error("Failed to prepare image for AI detection:", error)
+              return // Silently fail - use default values
+            }
+          }
+
+          const response = await fetch("/api/detect-ai", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ imageDataUrl: imageUrlToSend }),
+          })
+
+          if (response.ok) {
+            const result = await response.json()
+            setAiDetectionResult({
+              isAIGenerated: result.isAIGenerated,
+              probability: result.probability,
+            })
+          } else {
+            // Use default values on error
+            setAiDetectionResult({
+              isAIGenerated: false,
+              probability: 3,
+            })
+          }
+        } catch (error) {
+          console.error("AI detection error:", error)
+          // Use default values on error
+          setAiDetectionResult({
+            isAIGenerated: false,
+            probability: 3,
+          })
+        }
+      }
+
+      detectAI()
+    }
+  }, [isOpen, step, imageState.isAIGenerated, imageState.currentUrl, aiDetectionResult])
 
   // Generate preview filename - all hooks must be called unconditionally before any early returns
   const previewFileName = useMemo(() => {
@@ -157,6 +259,30 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
 
   const imageSize = `${imageState.width} x ${imageState.height} px`
   const canGenerateMetadata = sourceInfo.business && sourceInfo.assetType
+  
+  // Check if image width is supported for media bank upload (minimum 1440px)
+  const isMediaBankWidthSupported = imageState.width >= 1440
+
+  // Determine AI generation status and probability for display
+  // Priority: 1) AI detection result (if available), 2) imageState (from AI edit), 3) defaults
+  const aiDisplayInfo = useMemo(() => {
+    if (aiDetectionResult) {
+      return {
+        isAIGenerated: aiDetectionResult.isAIGenerated,
+        probability: aiDetectionResult.probability,
+      }
+    }
+    if (imageState.isAIGenerated) {
+      return {
+        isAIGenerated: true,
+        probability: imageState.aiGeneratedProbability || 75, // Default to 75% for AI edits
+      }
+    }
+    return {
+      isAIGenerated: false,
+      probability: imageState.aiGeneratedProbability || 3, // Default to 3% for non-AI
+    }
+  }, [aiDetectionResult, imageState.isAIGenerated, imageState.aiGeneratedProbability])
 
   // Generate metadata with OpenAI
   const generateMetadata = async () => {
@@ -256,14 +382,226 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
     setStep("download")
   }
 
+  const handleUploadToMediaBank = async () => {
+    if (!isMediaBankWidthSupported) {
+      alert("Image width must be at least 1440px to upload to Media Bank.")
+      return
+    }
+    
+    setIsDownloading(true)
+    try {
+      // Prepare image for upload (similar to download but upload to media bank)
+      let dataUrl: string
+      let imageUrlToProcess = imageState.currentUrl
+
+      // If image is blurred, apply blur effect first
+      if (imageState.isBlurred) {
+        try {
+          // Convert to data URL if needed (blur API needs accessible URL)
+          let imageDataUrl = imageState.currentUrl
+          if (!imageDataUrl.startsWith("data:") && !imageDataUrl.startsWith("http")) {
+            try {
+              const response = await fetch(imageState.currentUrl)
+              const blob = await response.blob()
+              const reader = new FileReader()
+              imageDataUrl = await new Promise<string>((resolve, reject) => {
+                reader.onloadend = () => {
+                  if (typeof reader.result === "string") {
+                    resolve(reader.result)
+                  } else {
+                    reject(new Error("Failed to convert image to data URL"))
+                  }
+                }
+                reader.onerror = reject
+                reader.readAsDataURL(blob)
+              })
+            } catch (error) {
+              console.error("Failed to prepare image for blur:", error)
+              throw new Error("Failed to prepare image for blur. Please try again.")
+            }
+          }
+
+          const blurResponse = await fetch("/api/blur", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ imageUrl: imageDataUrl, radius: 10 }),
+          })
+
+          if (!blurResponse.ok) {
+            const errorData = await blurResponse.json().catch(() => ({
+              error: "Failed to apply blur",
+            }))
+            throw new Error(errorData.error || "Failed to apply blur. Please try again.")
+          }
+
+          const blurResult = await blurResponse.json()
+          imageUrlToProcess = blurResult.blurredImageUrl
+        } catch (error) {
+          console.error("Blur error:", error)
+          throw new Error(error instanceof Error ? error.message : "Failed to apply blur. Please try again.")
+        }
+      }
+
+      if (transparentBg && format === "PNG" && !imageState.isBlurred) {
+        let imageDataUrl = imageState.currentUrl
+
+        if (!imageDataUrl.startsWith("data:")) {
+          try {
+            const response = await fetch(imageState.currentUrl)
+            const blob = await response.blob()
+            const reader = new FileReader()
+            imageDataUrl = await new Promise<string>((resolve, reject) => {
+              reader.onloadend = () => {
+                if (typeof reader.result === "string") {
+                  resolve(reader.result)
+                } else {
+                  reject(new Error("Failed to convert image to data URL"))
+                }
+              }
+              reader.onerror = reject
+              reader.readAsDataURL(blob)
+            })
+          } catch (error) {
+            console.error("Failed to prepare image for background removal:", error)
+            throw new Error("Failed to prepare image for background removal. Please try again.")
+          }
+        }
+
+        const removeBgResponse = await fetch("/api/remove-bg", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageDataUrl }),
+        })
+
+        if (!removeBgResponse.ok) {
+          const errorData = await removeBgResponse.json().catch(() => ({
+            error: "Failed to remove background",
+          }))
+          throw new Error(errorData.error || "Failed to remove background. Please try again.")
+        }
+
+        const resultBlob = await removeBgResponse.blob()
+        dataUrl = URL.createObjectURL(resultBlob)
+      } else {
+        const canvas = document.createElement("canvas")
+        const ctx = canvas.getContext("2d")
+        if (!ctx) throw new Error("Canvas not supported")
+
+        const img = new Image()
+        img.crossOrigin = "anonymous"
+
+        await new Promise((resolve, reject) => {
+          img.onload = resolve
+          img.onerror = reject
+          img.src = imageUrlToProcess
+        })
+
+        canvas.width = img.width
+        canvas.height = img.height
+
+        if (transparentBg && format === "PNG") {
+          ctx.drawImage(img, 0, 0)
+        } else {
+          ctx.fillStyle = "#FFFFFF"
+          ctx.fillRect(0, 0, canvas.width, canvas.height)
+          ctx.drawImage(img, 0, 0)
+        }
+
+        const mimeType = format === "PNG" ? "image/png" : "image/jpeg"
+        dataUrl = canvas.toDataURL(mimeType, 0.95)
+      }
+
+      // Convert to blob and upload
+      const blob = await (await fetch(dataUrl)).blob()
+      const formData = new FormData()
+      formData.append("file", blob, `${previewFileName || "image"}.${format.toLowerCase()}`)
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({
+          error: "Failed to upload to Media Bank",
+        }))
+        throw new Error(errorData.error || "Failed to upload to Media Bank. Please try again.")
+      }
+
+      const result = await response.json()
+      
+      // Clean up object URL if we created one
+      if (dataUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(dataUrl)
+      }
+
+      alert("Image uploaded to Media Bank successfully!")
+      onClose()
+    } catch (error) {
+      console.error("Upload error:", error)
+      alert(error instanceof Error ? error.message : "Upload failed. Please try again.")
+    } finally {
+      setIsDownloading(false)
+    }
+  }
+
   const handleDownload = async () => {
     setIsDownloading(true)
     try {
       let dataUrl: string
+      let imageUrlToProcess = imageState.currentUrl
+
+      // If image is blurred, apply blur effect first
+      if (imageState.isBlurred) {
+        try {
+          // Convert to data URL if needed (blur API needs accessible URL)
+          let imageDataUrl = imageState.currentUrl
+          if (!imageDataUrl.startsWith("data:") && !imageDataUrl.startsWith("http")) {
+            try {
+              const response = await fetch(imageState.currentUrl)
+              const blob = await response.blob()
+              const reader = new FileReader()
+              imageDataUrl = await new Promise<string>((resolve, reject) => {
+                reader.onloadend = () => {
+                  if (typeof reader.result === "string") {
+                    resolve(reader.result)
+                  } else {
+                    reject(new Error("Failed to convert image to data URL"))
+                  }
+                }
+                reader.onerror = reject
+                reader.readAsDataURL(blob)
+              })
+            } catch (error) {
+              console.error("Failed to prepare image for blur:", error)
+              throw new Error("Failed to prepare image for blur. Please try again.")
+            }
+          }
+
+          const blurResponse = await fetch("/api/blur", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ imageUrl: imageDataUrl, radius: 10 }),
+          })
+
+          if (!blurResponse.ok) {
+            const errorData = await blurResponse.json().catch(() => ({
+              error: "Failed to apply blur",
+            }))
+            throw new Error(errorData.error || "Failed to apply blur. Please try again.")
+          }
+
+          const blurResult = await blurResponse.json()
+          imageUrlToProcess = blurResult.blurredImageUrl
+        } catch (error) {
+          console.error("Blur error:", error)
+          throw new Error(error instanceof Error ? error.message : "Failed to apply blur. Please try again.")
+        }
+      }
 
       // When transparent background is requested for PNG, call the server-side
       // background removal API which uses REMOVE_BG_API_KEY.
-      if (transparentBg && format === "PNG") {
+      if (transparentBg && format === "PNG" && !imageState.isBlurred) {
         let imageDataUrl = imageState.currentUrl
 
         // Ensure we send a data URL (remove.bg and our API cannot access blob: URLs)
@@ -315,7 +653,7 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
         await new Promise((resolve, reject) => {
           img.onload = resolve
           img.onerror = reject
-          img.src = imageState.currentUrl
+          img.src = imageUrlToProcess
         })
 
         canvas.width = img.width
@@ -396,7 +734,7 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
         {step === "download" && (
           <>
             <div className="p-6 border-b border-border flex items-center justify-between">
-              <h2 className="text-2xl font-bold">DOWNLOAD</h2>
+              <h2 className="text-2xl font-bold">{imageState.isBlurred ? "EXPORT OPTIONS" : "DOWNLOAD"}</h2>
               <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
                 <X className="w-5 h-5" />
               </button>
@@ -424,12 +762,13 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
 
               {/* Transparent background */}
               {format === "PNG" && (
-                <label className="flex items-center gap-3 cursor-pointer">
+                <label className={`flex items-center gap-3 ${imageState.isBlurred ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}>
                   <input
                     type="checkbox"
                     checked={transparentBg}
                     onChange={(e) => setTransparentBg(e.target.checked)}
-                    className="w-4 h-4 rounded border-border accent-[#E30613]"
+                    disabled={imageState.isBlurred}
+                    className="w-4 h-4 rounded border-border accent-[#E30613] disabled:cursor-not-allowed"
                   />
                   <span className="text-sm">Transparent background</span>
                 </label>
@@ -439,19 +778,35 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
               <div className="grid grid-cols-3 gap-4 py-4 border-t border-b border-border">
                 <div>
                   <div className="text-xs text-muted-foreground">Image size</div>
-                  <div className="text-sm font-medium">{imageSize}</div>
+                  <div className={`text-sm font-medium ${imageState.isBlurred ? "text-[#E30613]" : ""}`}>{imageSize}</div>
                 </div>
                 <div>
                   <div className="text-xs text-muted-foreground">Metadata</div>
-                  <div className="text-sm font-medium">{metadataApplied ? "Added" : "Not added"}</div>
+                  <div className="text-sm font-medium text-muted-foreground">{metadataApplied ? "Added" : "Not added"}</div>
                 </div>
                 <div>
-                  <div className="text-xs text-muted-foreground">File name preview</div>
-                  <div className="text-sm font-medium truncate">
-                    {metadataApplied ? `${previewFileName}.${format.toLowerCase()}` : `image.${format.toLowerCase()}`}
+                  <div className="text-xs text-muted-foreground">File name preview:</div>
+                  <div className="text-sm font-medium text-muted-foreground truncate">
+                    {metadataApplied 
+                      ? `${previewFileName}.${format.toLowerCase()}` 
+                      : imageState.originalFileName 
+                        ? `${imageState.originalFileName.replace(/\.[^/.]+$/, "")}.${format.toLowerCase()}`
+                        : `image.${format.toLowerCase()}`
+                    }
                   </div>
                 </div>
               </div>
+
+              {/* Warning message for media bank width (only show when blur is active) */}
+              {/* Commented out - can be re-enabled in the future when needed */}
+              {/* {imageState.isBlurred && !isMediaBankWidthSupported && (
+                <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <Info className="w-4 h-4 text-[#E30613] flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-[#E30613]">
+                    This image width is not supported when uploading to the media bank.
+                  </p>
+                </div>
+              )} */}
 
               {/* Action buttons */}
               <div className="flex items-center justify-between pt-2">
@@ -459,7 +814,7 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
                   Cancel
                 </Button>
                 <div className="flex gap-3">
-                  {!metadataApplied && (
+                  {!imageState.isBlurred && !metadataApplied && (
                     <Button variant="outline" onClick={() => setStep("metadata-step1")}>
                       Add Metadata
                     </Button>
@@ -472,6 +827,16 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
                     <DownloadIcon className="w-4 h-4 mr-2" />
                     {isDownloading ? "Downloading..." : "Download"}
                   </Button>
+                  {imageState.isBlurred && (
+                    <Button
+                      onClick={handleUploadToMediaBank}
+                      disabled={isDownloading || !isMediaBankWidthSupported}
+                      className="bg-[#E30613]/80 hover:bg-[#E30613]/90 text-white"
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Upload to Media Bank
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
@@ -499,10 +864,10 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
                 />
                 <div className="flex items-center justify-between text-xs px-2 py-1.5 bg-muted/50 rounded">
                   <span className="text-muted-foreground">
-                    {imageState.isAIGenerated ? "Likely" : "Not likely"} to be AI-generated
+                    {aiDisplayInfo.isAIGenerated ? "Likely" : "Not likely"} to be AI-generated
                   </span>
                   <span className="px-2 py-0.5 bg-muted rounded text-muted-foreground">
-                    {imageState.isAIGenerated ? "75%" : "3%"}
+                    {aiDisplayInfo.probability}%
                   </span>
                 </div>
                 <div className="text-xs text-muted-foreground">
@@ -653,10 +1018,10 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
                 />
                 <div className="flex items-center justify-between text-xs px-2 py-1.5 bg-muted/50 rounded">
                   <span className="text-muted-foreground">
-                    {imageState.isAIGenerated ? "Likely" : "Not likely"} to be AI-generated
+                    {aiDisplayInfo.isAIGenerated ? "Likely" : "Not likely"} to be AI-generated
                   </span>
                   <span className="px-2 py-0.5 bg-muted rounded text-muted-foreground">
-                    {imageState.isAIGenerated ? "75%" : "3%"}
+                    {aiDisplayInfo.probability}%
                   </span>
                 </div>
                 <div className="text-xs text-muted-foreground">
@@ -766,3 +1131,4 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
     </div>
   )
 }
+

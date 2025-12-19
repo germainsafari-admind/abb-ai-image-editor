@@ -137,6 +137,7 @@ export default function Home() {
               style={{
                 opacity: animationStage >= 5 ? 1 : 0,
                 transform: animationStage >= 5 ? 'translateY(0)' : 'translateY(20px)',
+                fontFamily: 'var(--font-abb-voice-display)',
               }}
             >
               ABB AI IMAGE

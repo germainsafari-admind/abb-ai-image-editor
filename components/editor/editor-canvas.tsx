@@ -5,6 +5,7 @@ import { ChevronLeft, Check, RotateCcw } from "lucide-react"
 import type { ImageState, EditorMode, CropDimensions } from "@/types/editor"
 import CropPresetTray from "@/components/editor/crop-preset-tray"
 import { CROP_CATEGORIES, type CategoryPreset } from "@/lib/crop-presets"
+import AILoadingPopup from "@/components/editor/ai-loading-popup"
 
 interface EditorCanvasProps {
   imageState: ImageState
@@ -46,6 +47,7 @@ export default function EditorCanvas({
   const [aiPrompt, setAiPrompt] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   // Get current category (fallback to first for safety)
   const currentCategory =
@@ -370,6 +372,9 @@ export default function EditorCanvas({
     setIsGenerating(true)
     setAiError(null)
 
+    // Create abort controller for cancellation
+    abortControllerRef.current = new AbortController()
+
     try {
       const response = await fetch("/api/edit", {
         method: "POST",
@@ -382,6 +387,7 @@ export default function EditorCanvas({
           width: imageState.width,
           height: imageState.height,
         }),
+        signal: abortControllerRef.current.signal,
       })
 
       const data = await response.json()
@@ -400,11 +406,24 @@ export default function EditorCanvas({
       })
       onModeChange("ai-result")
     } catch (error: unknown) {
+      // Don't show error if it was aborted
+      if (error instanceof Error && error.name === "AbortError") {
+        return
+      }
       const errorMessage = error instanceof Error ? error.message : "Failed to generate. Please try again."
       setAiError(errorMessage)
     } finally {
       setIsGenerating(false)
+      abortControllerRef.current = null
     }
+  }
+
+  const handleCancelGeneration = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    setIsGenerating(false)
+    setAiError(null)
   }
 
   const handlePresetClick = (preset: string) => {
@@ -596,7 +615,7 @@ export default function EditorCanvas({
             </div>
 
             {/* AI Edit input panel - positioned at bottom of image */}
-            {editorMode === "ai-edit" && (
+            {editorMode === "ai-edit" && !isGenerating && (
               <div className="absolute bottom-4 left-4 right-4">
                 <div className="bg-white rounded-xl shadow-2xl p-4 max-w-xl mx-auto">
                   <input
@@ -639,6 +658,11 @@ export default function EditorCanvas({
                   {aiError && <div className="mt-3 p-2 bg-red-50 text-red-600 text-sm rounded-lg">{aiError}</div>}
                 </div>
               </div>
+            )}
+
+            {/* AI Loading Popup - appears in place of AI edit overlay when generating */}
+            {editorMode === "ai-edit" && isGenerating && (
+              <AILoadingPopup onCancel={handleCancelGeneration} />
             )}
 
             {/* Crop format tray – floating overlay at bottom of image
