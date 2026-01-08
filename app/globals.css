@@ -170,8 +170,13 @@
   animation: slideDown 0.4s ease-out forwards;
 }
 
-/* AI Loading Popup Animations */
-@keyframes ai-rotate {
+/* ABB Loader Animations */
+/* Animation sequence: variants 2-9 (8 steps), 10-20 (11 steps), then 1 (1 step) = 20 total variants */
+/* Each variant transition: 60ms duration, 1ms delay, linear curve */
+/* Total cycle: 20 variants × 60ms = 1200ms (1.2s) */
+/* The loader rotates continuously while the arc expands and contracts */
+
+@keyframes abb-loader-rotate {
   from {
     transform: rotate(0deg);
   }
@@ -180,31 +185,207 @@
   }
 }
 
-@keyframes ai-pulse {
-  0%, 100% {
-    stroke-dasharray: 12 52;
+@keyframes abb-loader-arc {
+  /* Variant 1: Small arc starting at bottom-right (circumference = ~125.6, radius 20) */
+  0%, 5% {
+    stroke-dasharray: 10 115.6;
+    stroke-dashoffset: 100;
+  }
+  /* Variants 2-9: Arc expanding (each step adds ~5 to dasharray, reduces offset) */
+  5.05% {
+    stroke-dasharray: 15 110.6;
+    stroke-dashoffset: 95;
+  }
+  5.1% {
+    stroke-dasharray: 20 105.6;
+    stroke-dashoffset: 90;
+  }
+  5.15% {
+    stroke-dasharray: 25 100.6;
+    stroke-dashoffset: 85;
+  }
+  5.2% {
+    stroke-dasharray: 30 95.6;
+    stroke-dashoffset: 80;
+  }
+  5.25% {
+    stroke-dasharray: 35 90.6;
+    stroke-dashoffset: 75;
+  }
+  5.3% {
+    stroke-dasharray: 40 85.6;
+    stroke-dashoffset: 70;
+  }
+  5.35% {
+    stroke-dasharray: 45 80.6;
+    stroke-dashoffset: 65;
+  }
+  5.4% {
+    stroke-dasharray: 50 75.6;
+    stroke-dashoffset: 60;
+  }
+  5.45% {
+    stroke-dasharray: 55 70.6;
+    stroke-dashoffset: 55;
+  }
+  /* Variants 10-20: Arc continues expanding to full circle */
+  5.5% {
+    stroke-dasharray: 60 65.6;
+    stroke-dashoffset: 50;
+  }
+  5.55% {
+    stroke-dasharray: 65 60.6;
+    stroke-dashoffset: 45;
+  }
+  5.6% {
+    stroke-dasharray: 70 55.6;
+    stroke-dashoffset: 40;
+  }
+  5.65% {
+    stroke-dasharray: 75 50.6;
+    stroke-dashoffset: 35;
+  }
+  5.7% {
+    stroke-dasharray: 80 45.6;
+    stroke-dashoffset: 30;
+  }
+  5.75% {
+    stroke-dasharray: 85 40.6;
+    stroke-dashoffset: 25;
+  }
+  5.8% {
+    stroke-dasharray: 90 35.6;
+    stroke-dashoffset: 20;
+  }
+  5.85% {
+    stroke-dasharray: 95 30.6;
+    stroke-dashoffset: 15;
+  }
+  5.9% {
+    stroke-dasharray: 100 25.6;
+    stroke-dashoffset: 10;
+  }
+  5.95% {
+    stroke-dasharray: 105 20.6;
+    stroke-dashoffset: 5;
+  }
+  6% {
+    stroke-dasharray: 110 15.6;
     stroke-dashoffset: 0;
-    opacity: 1;
   }
-  50% {
-    stroke-dasharray: 25 39;
-    stroke-dashoffset: -10;
-    opacity: 0.85;
+  6.05% {
+    stroke-dasharray: 115 10.6;
+    stroke-dashoffset: -5;
+  }
+  /* Full circle reached, then back to variant 1 */
+  6.1%, 100% {
+    stroke-dasharray: 10 115.6;
+    stroke-dashoffset: 100;
   }
 }
 
-.ai-loader-rotate {
-  animation: ai-rotate 2s linear infinite;
+.abb-loader-svg {
+  animation: abb-loader-rotate 1.2s linear infinite;
 }
 
-.ai-arc-red {
-  stroke-dasharray: 12 52;
-  stroke-dashoffset: 0;
-  animation: ai-pulse 1.5s ease-in-out infinite;
+.abb-loader-arc {
+  animation: abb-loader-arc 1.2s linear infinite;
+  transform-origin: 24px 24px;
 }
 
-.ai-arc-violet {
-  stroke-dasharray: 12 52;
-  stroke-dashoffset: 32;
-  animation: ai-pulse 1.5s ease-in-out infinite 0.3s;
+/* Cancel X Button Styles - Pill shaped */
+.abb-cancel-pill-button {
+  position: relative;
+  height: 48px;
+  padding: 0 24px;
+  border-radius: 28px;
+  background: white;
+  color: #000000;
+  border: 1px solid #000000;
+  cursor: pointer;
+}
+
+.abb-cancel-pill-button::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 30px;
+  background: linear-gradient(135deg, #6764F6 0%, #E30613 100%);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: -1;
+}
+
+.abb-cancel-pill-button::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: 26px;
+  background: white;
+  z-index: -1;
+  transition: inset 0.2s ease;
+}
+
+.abb-cancel-pill-button:hover {
+  border-color: transparent;
+}
+
+.abb-cancel-pill-button:hover::before {
+  opacity: 1;
+}
+
+.abb-cancel-pill-button:hover::after {
+  inset: 2px;
+  border-radius: 25px;
+}
+
+/* Legacy Cancel X Button Styles */
+.abb-cancel-button {
+  position: relative;
+  border: 1px solid #000000;
+  background: white;
+  color: #000000;
+}
+
+.abb-cancel-button::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 8px;
+  background: linear-gradient(to right, #6764F6, #E30613);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: -1;
+}
+
+.abb-cancel-button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 7px;
+  background: white;
+  z-index: -1;
+}
+
+.abb-cancel-button:hover {
+  border-color: transparent;
+}
+
+.abb-cancel-button:hover::before {
+  opacity: 1;
+}
+
+/* Progressive blur animation - left to right */
+@keyframes blur-progressive {
+  0% {
+    clip-path: inset(0 100% 0 0);
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+.blur-progressive-animation {
+  animation: blur-progressive 1s ease-out forwards;
+  will-change: clip-path;
 }

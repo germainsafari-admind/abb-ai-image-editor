@@ -71,7 +71,7 @@ const CropPresetTray: React.FC<CropPresetTrayProps> = ({
             <button
               key={category.name}
               onClick={() => onSelectCategory(category.name)}
-              className="px-3 py-1.5 rounded-full font-medium transition-all bg-gray-100 text-gray-700 hover:bg-gray-200"
+              className="px-3 py-1.5 rounded-full font-medium transition-all bg-[#F0F0F0] text-gray-700 hover:bg-[#E4E7FF]"
             >
               {category.label}
             </button>
@@ -95,7 +95,7 @@ const CropPresetTray: React.FC<CropPresetTrayProps> = ({
         <div className="text-sm font-medium mb-4">
           {currentCategoryLabel} format:
           {displayPreset && (
-            <span className="text-[#7C3AED] font-medium ml-1">
+            <span className="text-[#6764F6] font-medium ml-1">
               {displayPreset.label} ({displayPreset.displayRatio})
             </span>
           )}
@@ -113,7 +113,7 @@ const CropPresetTray: React.FC<CropPresetTrayProps> = ({
               placeholder="Image width"
               value={customRatioWidth}
               onChange={(e) => onChangeCustomWidth(e.target.value)}
-              className="w-28 px-3 py-2 rounded-lg border border-border text-sm focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
+              className="w-28 px-3 py-2 rounded-lg border border-border text-sm focus:outline-none focus:ring-2 focus:ring-[#6764F6]"
             />
             <span className="text-muted-foreground text-sm">x</span>
             <input
@@ -122,7 +122,7 @@ const CropPresetTray: React.FC<CropPresetTrayProps> = ({
               placeholder="Image height"
               value={customRatioHeight}
               onChange={(e) => onChangeCustomHeight(e.target.value)}
-              className="w-28 px-3 py-2 rounded-lg border border-border text-sm focus:outline-none focus:ring-2 focus:ring-[#7C3AED]"
+              className="w-28 px-3 py-2 rounded-lg border border-border text-sm focus:outline-none focus:ring-2 focus:ring-[#6764F6]"
             />
           </div>
           <div className="mt-2 text-xs text-muted-foreground">
@@ -133,7 +133,7 @@ const CropPresetTray: React.FC<CropPresetTrayProps> = ({
         </div>
       ) : (
         currentCategory.presets.length > 0 && (
-          <div className="flex items-start gap-2 mb-4 overflow-x-auto pb-2">
+          <div className="flex items-start gap-3 mb-4 overflow-x-auto pb-2">
             {currentCategory.presets.map((preset) => {
               const isSelected = selectedPreset?.name === preset.name
               const { w, h } = getBoxDimensions(preset.ratio)
@@ -151,12 +151,12 @@ const CropPresetTray: React.FC<CropPresetTrayProps> = ({
                     onMouseLeave={() => setHoveredPreset(null)}
                     className={`flex items-center justify-center rounded-lg border-2 transition-all ${
                       isSelected
-                        ? "border-[#7C3AED] text-[#7C3AED] bg-[#F3E8FF]"
-                        : "border-gray-300 text-gray-400 bg-white hover:border-[#7C3AED] hover:text-[#7C3AED]"
+                        ? "border-[#6764F6] text-[#6764F6] bg-[#F3E8FF]"
+                        : "border-[#A9A9A9] text-[#A9A9A9] bg-white hover:border-[#6764F6] hover:text-[#6764F6] active:border-[#6764F6] active:text-[#6764F6]"
                     }`}
                     style={{ width: w, height: h }}
                   >
-                    <span className="text-[10px] font-medium">{preset.displayRatio}</span>
+                    <span className="text-sm font-medium">{preset.displayRatio}</span>
                   </button>
                 </div>
               )
@@ -174,7 +174,7 @@ const CropPresetTray: React.FC<CropPresetTrayProps> = ({
               key={category.name}
               onClick={() => onSelectCategory(category.name)}
               className={`px-3 py-1.5 rounded-full font-medium transition-all ${
-                isSelected ? "bg-[#7C3AED] text-white shadow-sm" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                isSelected ? "bg-[#6764F6] text-white shadow-sm" : "bg-[#F0F0F0] text-gray-700 hover:bg-[#E4E7FF]"
               }`}
             >
               {category.label}

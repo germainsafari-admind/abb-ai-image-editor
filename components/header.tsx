@@ -1,16 +1,15 @@
 "use client"
 
 import Link from "next/link"
-import { LogOut } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import Image from "next/image"
 
 export default function Header() {
   return (
-    <header className="h-14 sm:h-16 border-b border-border bg-background sticky top-0 z-40">
+    <header className="h-20 sm:h-24 border-b border-border bg-background sticky top-0 z-40 flex-shrink-0">
       <div className="h-full px-4 sm:px-6 flex items-center justify-between">
         {/* ABB Logo - using provided SVG */}
         <Link href="/" className="flex items-center flex-shrink-0">
-          <svg width="48" height="20" viewBox="0 0 64 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg width="72" height="30" viewBox="0 0 64 25" fill="none" xmlns="http://www.w3.org/2000/svg">
             <mask
               id="mask0"
               style={{ maskType: "luminance" }}
@@ -108,9 +107,19 @@ export default function Header() {
 
         {/* Right Actions */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9">
-            <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
-          </Button>
+          <button 
+            type="button"
+            className="h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center hover:bg-transparent focus:outline-none focus-visible:outline-none"
+            aria-label="Logout"
+          >
+            <Image 
+              src="/navbar Icon on the top right corner.svg" 
+              alt="Logout" 
+              width={24} 
+              height={24}
+              className="w-5 h-5 sm:w-6 sm:h-6"
+            />
+          </button>
         </div>
       </div>
     </header>

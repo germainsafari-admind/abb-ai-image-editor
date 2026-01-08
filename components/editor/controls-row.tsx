@@ -70,16 +70,16 @@ export default function ControlsRow({
 
   return (
     <>
-      {/* Controls container - matches image container width */}
-      <div className="flex justify-center px-4 sm:px-6" style={{ marginTop: "1px", marginBottom: "24px" }}>
-        <div
-          className="w-full max-w-5xl flex justify-center"
-        >
+      {/* Controls container - matches Figma design */}
+      <div 
+        className="flex justify-center px-4 sm:px-6 flex-shrink-0" 
+        style={{ marginTop: "1px", marginBottom: "24px" }}
+      >
+        <div className="w-full max-w-5xl flex justify-center">
+          {/* Bottom Bar Component - Rectangular with rounded corners */}
           <div
-            className="w-full flex items-center justify-between gap-2 sm:gap-3 bg-[#EFF1F5] rounded-full px-4 sm:px-5 py-2.5"
-            style={{
-              boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06)',
-            }}
+            className="w-full flex items-center justify-between bg-[#F0F0F0] rounded-lg"
+            style={{ height: "64px", padding: "8px 12px" }}
           >
             {/* Left Group: Undo/Redo */}
             <div className="flex items-center gap-0.5">
@@ -90,9 +90,9 @@ export default function ControlsRow({
                     size="sm"
                     onClick={onUndo}
                     disabled={!canUndo}
-                    className="h-9 w-9 p-0 rounded-full text-gray-800 hover:text-gray-950 hover:bg-gray-200"
+                    className="h-9 w-9 p-0 rounded-md text-gray-800 hover:text-gray-950 hover:bg-gray-200 active:bg-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
-                    <Undo2 className="w-[18px] h-[18px]" />
+                    <Undo2 className="w-[18px] h-[18px] stroke-[2.5]" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -107,9 +107,9 @@ export default function ControlsRow({
                     size="sm"
                     onClick={onRedo}
                     disabled={!canRedo}
-                    className="h-9 w-9 p-0 rounded-full text-gray-800 hover:text-gray-950 hover:bg-gray-200"
+                    className="h-9 w-9 p-0 rounded-md text-gray-800 hover:text-gray-950 hover:bg-gray-200 active:bg-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
-                    <Redo2 className="w-[18px] h-[18px]" />
+                    <Redo2 className="w-[18px] h-[18px] stroke-[2.5]" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -127,10 +127,10 @@ export default function ControlsRow({
                     variant="ghost"
                     size="sm"
                     onClick={() => onModeChange(isCropMode ? "view" : "crop")}
-                    className={`h-9 w-9 p-0 rounded-full ${
+                    className={`h-9 w-9 p-0 rounded-md transition-colors ${
                       isCropMode
-                        ? "bg-[#7C3AED] hover:bg-[#6D28D9] text-white"
-                        : "text-gray-800 hover:text-gray-950 hover:bg-gray-200"
+                        ? "bg-[#6764F6] hover:bg-[#5653E5] active:bg-[#4542D4] text-white"
+                        : "text-gray-800 hover:text-gray-950 hover:bg-gray-200 active:bg-gray-300"
                     }`}
                   >
                     <CropIcon className="w-[18px] h-[18px]" />
@@ -148,10 +148,10 @@ export default function ControlsRow({
                     variant="ghost"
                     size="sm"
                     onClick={() => onModeChange(isAIEditMode ? "view" : "ai-edit")}
-                    className={`h-9 w-9 p-0 rounded-full ${
+                    className={`h-9 w-9 p-0 rounded-md transition-colors ${
                       isAIEditMode
-                        ? "bg-[#7C3AED] hover:bg-[#6D28D9] text-white"
-                        : "text-gray-800 hover:text-gray-950 hover:bg-gray-200"
+                        ? "bg-[#6764F6] hover:bg-[#5653E5] active:bg-[#4542D4] text-white"
+                        : "text-gray-800 hover:text-gray-950 hover:bg-gray-200 active:bg-gray-300"
                     }`}
                   >
                     <AIIcon className="w-[18px] h-[18px]" />
@@ -162,17 +162,17 @@ export default function ControlsRow({
                 </TooltipContent>
               </Tooltip>
 
-              {/* Blur Button */}
+              {/* Blur/Droplet Button */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={onBlur}
-                    className={`h-9 w-9 p-0 rounded-full ${
+                    className={`h-9 w-9 p-0 rounded-md transition-colors ${
                       isBlurred
-                        ? "bg-[#7C3AED] hover:bg-[#6D28D9] text-white"
-                        : "text-gray-800 hover:text-gray-950 hover:bg-gray-200"
+                        ? "bg-[#6764F6] hover:bg-[#5653E5] active:bg-[#4542D4] text-white"
+                        : "text-gray-800 hover:text-gray-950 hover:bg-gray-200 active:bg-gray-300"
                     }`}
                   >
                     <BlurIcon className="w-[18px] h-[18px]" />
@@ -192,7 +192,7 @@ export default function ControlsRow({
                     const event = new CustomEvent("applyCrop")
                     window.dispatchEvent(event)
                   }}
-                  className="bg-[#E30613] hover:bg-[#c70510] text-white rounded-full px-4 sm:px-5 h-9 text-sm font-semibold"
+                  className="bg-[#E30613] hover:bg-[#c70510] active:bg-[#b0040e] text-white rounded-full px-4 sm:px-5 h-12 text-sm font-semibold transition-colors"
                 >
                   Apply Crop
                 </Button>
@@ -200,10 +200,14 @@ export default function ControlsRow({
                 <Button
                   onClick={handleDownloadClick}
                   variant="outline"
-                  className="rounded-full px-4 sm:px-5 h-9 text-sm font-semibold bg-white border border-gray-300 text-gray-800 hover:text-gray-950 hover:bg-gray-100 hover:border-gray-400"
+                  className="rounded-[28px] px-4 h-12 text-sm font-semibold bg-white border border-black/100 text-gray-800 hover:text-gray-950 hover:bg-gray-50 active:bg-gray-100 hover:border-black/80 transition-colors"
+                  style={{
+                    gap: "8px",
+                    borderWidth: "1px",
+                  }}
                 >
                   <span>Export options</span>
-                  <ExternalLink className="w-3.5 h-3.5 ml-2" />
+                  <ExternalLink className="w-3.5 h-3.5" />
                 </Button>
               )}
             </div>
@@ -217,6 +221,7 @@ export default function ControlsRow({
         onClose={() => setShowMetadataPrompt(false)}
         onNoThanks={handleNoThanks}
         onAddMetadata={handleAddMetadata}
+        isBlurred={isBlurred}
       />
 
       {/* Download Modal */}

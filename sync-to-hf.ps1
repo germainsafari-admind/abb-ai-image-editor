@@ -51,11 +51,13 @@ foreach ($item in $itemsToSync) {
     }
 }
 
-Write-Host "`n✅ Sync complete!" -ForegroundColor Green
-Write-Host "`nNext steps:" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "Sync complete!" -ForegroundColor Green
+Write-Host ""
+Write-Host "Next steps:" -ForegroundColor Cyan
 Write-Host "  1. cd abbaiphotoeditor" -ForegroundColor White
 Write-Host "  2. git status" -ForegroundColor White
 Write-Host "  3. git add ." -ForegroundColor White
 Write-Host '  4. git commit -m "Sync changes from root"' -ForegroundColor White
-Write-Host '  5. git push origin main' -ForegroundColor White
+Write-Host "  5. git push origin main" -ForegroundColor White
 

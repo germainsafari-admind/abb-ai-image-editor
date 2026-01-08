@@ -26,7 +26,7 @@ ${sourceContext}
 
 Please provide:
 1. A concise title (max 200 characters) that describes the image content.
-2. A concise description (max 400 characters) that describes what's in the image and how it relates to the business context. Be specific and professional.
+2. A concise description (max 300 characters) that describes what's in the image and how it relates to the business context. Be specific and professional.
 3. 5-8 relevant tags for searchability (single words or short phrases).
 
 Return as JSON with this exact format:

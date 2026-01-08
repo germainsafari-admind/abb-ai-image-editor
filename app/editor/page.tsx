@@ -163,7 +163,7 @@ export default function EditorPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-dvh max-h-dvh bg-background flex flex-col overflow-hidden">
       <Header />
 
       {/* Color Correction Info Banner */}
@@ -174,14 +174,10 @@ export default function EditorPage() {
             animation: 'slideDown 0.4s ease-out forwards',
           }}
         >
-          <div className="max-w-5xl mx-auto bg-[#E8F4FD] rounded-xl px-4 py-3 flex items-center gap-3">
+          <div className="max-w-5xl mx-auto bg-[#EBF1FF] rounded-xl px-4 py-3 flex items-center gap-3">
             <div className="flex-shrink-0">
-              <svg className="w-5 h-5 text-[#0066CC]" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                  clipRule="evenodd"
-                />
+              <svg className="w-5 h-5" fill="#0F0F0F" viewBox="0 0 16 16">
+                <path d="M8 0C3.58172 0 0 3.58172 0 8C0 12.4183 3.58172 16 8 16C12.4183 16 16 12.4183 16 8C16 3.58172 12.4183 0 8 0ZM8.99976 8V12C8.99976 12.5523 8.55204 13 7.99976 13C7.44747 13 6.99976 12.5523 6.99976 12V8C6.99976 7.44772 7.44747 7 7.99976 7C8.55204 7 8.99976 7.44772 8.99976 8ZM9.25037 4.25195C9.25037 4.94231 8.69072 5.50195 8.00037 5.50195C7.31001 5.50195 6.75037 4.94231 6.75037 4.25195C6.75037 3.5616 7.31001 3.00195 8.00037 3.00195C8.69072 3.00195 9.25037 3.5616 9.25037 4.25195Z" />
               </svg>
             </div>
             <p className="text-sm text-gray-700 flex-1">

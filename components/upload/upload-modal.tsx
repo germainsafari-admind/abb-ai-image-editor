@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react"
 import { useDropzone, FileRejection } from "react-dropzone"
-import { X, Loader2, Upload } from "lucide-react"
+import { X, Loader2 } from "lucide-react"
 
 interface UploadModalProps {
   isOpen: boolean
@@ -19,7 +19,7 @@ const ACCEPTED_TYPES = {
 // 100 MB maximum upload size
 const MAX_FILE_SIZE = 100 * 1024 * 1024
 
-// Cloud upload icon matching the design
+// Cloud upload icon matching the design - simple outline cloud with upward arrow
 function CloudUploadIcon({ className }: { className?: string }) {
   return (
     <svg 
@@ -28,18 +28,41 @@ function CloudUploadIcon({ className }: { className?: string }) {
       fill="none" 
       xmlns="http://www.w3.org/2000/svg"
     >
+      {/* Cloud outline */}
+      <path 
+        d="M12 32C8.68629 32 6 29.3137 6 26C6 23.0919 8.07752 20.6713 10.8344 20.1136C10.2901 18.8655 10 17.4893 10 16.05C10 10.502 14.5 6 20 6C24.0779 6 27.6112 8.46613 29.1697 12.0081C29.7724 11.6847 30.4624 11.5 31.2 11.5C33.8509 11.5 36 13.6491 36 16.3C36 16.7586 35.9442 17.2041 35.8387 17.6299C39.3615 18.5698 42 21.7728 42 25.5714C42 30.1199 38.3137 33.8062 33.7652 33.8062" 
+        stroke="currentColor" 
+        strokeWidth="1.5" 
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {/* Upward arrow in center */}
       <path 
         d="M24 32V18M24 18L18 24M24 18L30 24" 
+        stroke="currentColor" 
+        strokeWidth="1.5" 
+        strokeLinecap="round" 
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+// Upload arrow icon for button - simple upward arrow
+function UploadArrowIcon({ className }: { className?: string }) {
+  return (
+    <svg 
+      className={className} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path 
+        d="M12 19V5M12 5L5 12M12 5L19 12" 
         stroke="currentColor" 
         strokeWidth="2" 
         strokeLinecap="round" 
         strokeLinejoin="round"
-      />
-      <path 
-        d="M12 32C8.68629 32 6 29.3137 6 26C6 23.0919 8.07752 20.6713 10.8344 20.1136C10.2901 18.8655 10 17.4893 10 16.05C10 10.502 14.5 6 20 6C24.0779 6 27.6112 8.46613 29.1697 12.0081C29.7724 11.6847 30.4624 11.5 31.2 11.5C33.8509 11.5 36 13.6491 36 16.3C36 16.7586 35.9442 17.2041 35.8387 17.6299C39.3615 18.5698 42 21.7728 42 25.5714C42 30.1199 38.3137 33.8062 33.7652 33.8062" 
-        stroke="currentColor" 
-        strokeWidth="2" 
-        strokeLinecap="round"
       />
     </svg>
   )
@@ -49,6 +72,7 @@ export default function UploadModal({ isOpen, onClose, onImageUploaded }: Upload
   const [isUploading, setIsUploading] = useState(false)
   const [formatError, setFormatError] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isHovered, setIsHovered] = useState(false)
 
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
@@ -130,23 +154,30 @@ export default function UploadModal({ isOpen, onClose, onImageUploaded }: Upload
       // Error state - salmon/peach background
       return "border-[#FFB8A8] bg-[#FFEBE6]"
     }
-    if (isDragActive) {
-      // Drag active state - light blue background
-      return "border-[#7EB8F0] bg-[#E8F2FC]"
+    if (isDragActive || isHovered) {
+      // Drag active or hover state - ABB Lilac border with light purple background
+      return "border-[#6764F6] bg-[#F5F4FF]"
     }
     // Default state
-    return "border-gray-300 hover:border-gray-400"
+    return "border-gray-300 bg-white"
   }
+
+  const isActiveState = isDragActive || isHovered
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-center p-6 pb-2 relative">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight uppercase">Upload Your Image</h2>
+        <div className="flex items-center justify-center pt-[56px] pr-[40px] pb-0 pl-[40px] relative">
+          <h2 
+            className="text-[32px] font-bold tracking-tight uppercase"
+            style={{ fontFamily: 'var(--font-abb-voice-display)' }}
+          >
+            Upload Your Image
+          </h2>
           <button
             onClick={onClose}
-            className="absolute right-6 text-gray-400 hover:text-gray-600 transition-colors"
+            className="absolute right-[40px] top-[56px] text-gray-400 hover:text-gray-600 transition-colors"
             disabled={isUploading}
           >
             <X className="w-5 h-5" />
@@ -154,10 +185,12 @@ export default function UploadModal({ isOpen, onClose, onImageUploaded }: Upload
         </div>
 
         {/* Drop zone */}
-        <div className="px-6 pb-6">
+        <div className="pt-[48px] pr-[40px] pb-[56px] pl-[40px]">
           <div
             {...getRootProps()}
-            className={`border-2 border-dashed rounded-xl p-8 sm:p-10 text-center cursor-pointer transition-all duration-200 ${getZoneStyles()} ${isUploading ? "opacity-50 cursor-not-allowed" : ""}`}
+            className={`group border-[1.5px] border-dashed rounded-xl p-8 sm:p-10 text-center cursor-pointer transition-all duration-200 ${getZoneStyles()} ${isUploading ? "opacity-50 cursor-not-allowed" : ""}`}
+            onMouseEnter={() => !isUploading && setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
           >
             <input {...getInputProps()} />
 
@@ -186,36 +219,36 @@ export default function UploadModal({ isOpen, onClose, onImageUploaded }: Upload
                     setFormatError(false)
                   }}
                 >
-                  Upload Image
-                  <Upload className="w-4 h-4" />
+                  Upload image
+                  <UploadArrowIcon className="w-4 h-4" />
                 </button>
               </>
             ) : (
               // Default state content
-              <>
+              <div className="space-y-0.5" style={{ lineHeight: isActiveState ? '1.6' : '1.5' }}>
                 <div className="flex justify-center mb-4">
-                  <CloudUploadIcon className="w-10 h-10 text-gray-400" />
+                  <CloudUploadIcon className="w-12 h-12 text-gray-400" />
                 </div>
-                <p className="text-sm text-gray-600 mb-1">
+                <p className="text-sm text-gray-600 mb-1 transition-all duration-200">
                   Drag & drop your file here, or upload it using the button below.
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 transition-all duration-200">
                   Supported formats: <span className="font-semibold">JPG, PNG, EPS</span>
                 </p>
-                <p className="text-xs text-gray-500">
-                  Max file size: <span className="font-semibold">100 MB</span>
+                <p className="text-xs text-gray-500 transition-all duration-200">
+                  Max file size: <span className="font-semibold">20 MB</span>
                 </p>
-                <p className="text-xs text-gray-500 mb-5">
+                <p className="text-xs text-gray-500 mb-5 transition-all duration-200">
                   Minimum image width for Media Bank: <span className="font-semibold">1440px</span>
                 </p>
                 <button
                   type="button"
                   className="inline-flex items-center gap-2 bg-[#E30613] hover:bg-[#c70510] text-white px-5 py-2.5 rounded-full text-sm font-medium transition-colors"
                 >
-                  Upload Image
-                  <Upload className="w-4 h-4" />
+                  Upload image
+                  <UploadArrowIcon className="w-4 h-4" />
                 </button>
-              </>
+              </div>
             )}
           </div>
 

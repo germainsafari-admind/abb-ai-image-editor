@@ -1,63 +1,74 @@
 "use client"
 
-import { X } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { ABBLoader } from "@/components/icons/abb-loader"
 
 interface AILoadingPopupProps {
   onCancel: () => void
 }
 
+function CloseIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 16 16"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M12 4L4 12M4 4L12 12"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 export default function AILoadingPopup({ onCancel }: AILoadingPopupProps) {
   return (
-    <div className="absolute bottom-4 left-4 right-4 z-50 animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
-      <div className="bg-white rounded-xl shadow-2xl border border-gray-200 px-4 py-3 flex items-center gap-3 max-w-xl mx-auto">
-          {/* Animated Loader */}
-          <div className="relative w-6 h-6 flex-shrink-0">
-            <svg
-              className="w-6 h-6 ai-loader-rotate"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
+    <div className="absolute bottom-4 left-4 right-4 z-50 animate-in fade-in-0 slide-in-from-bottom-2 duration-200 flex justify-center">
+      <div 
+        className="bg-white flex items-center justify-between gap-4"
+        style={{
+          width: '671px',
+          height: '88px',
+          borderRadius: '16px',
+          padding: '20px 24px',
+          boxShadow: '0 0 58.2px rgba(0, 0, 0, 0.1)',
+          fontFamily: 'var(--font-abb-voice)',
+        }}
+      >
+          {/* ABB Loader and Status Message */}
+          <div className="flex items-center gap-3 flex-1">
+            {/* ABB Loader */}
+            <div className="flex-shrink-0">
+              <ABBLoader size={16} strokeWidth={2} speedMs={900} />
+            </div>
+
+            {/* Status Message */}
+            <span 
+              className="text-sm text-gray-900"
+              style={{ fontWeight: 400 }}
             >
-              {/* Red arc - rotating and pulsating */}
-              <circle
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="#E30613"
-                strokeWidth="2"
-                fill="none"
-                strokeLinecap="round"
-                className="ai-arc-red"
-              />
-              {/* Violet-blue arc - offset and rotating */}
-              <circle
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="#7C3AED"
-                strokeWidth="2"
-                fill="none"
-                strokeLinecap="round"
-                className="ai-arc-violet"
-              />
-            </svg>
+              Editing image in progress...
+            </span>
           </div>
 
-          {/* Status Message */}
-          <div className="flex-1">
-            <span className="text-sm font-medium text-gray-900">Editing image in progress...</span>
-          </div>
-
-          {/* Cancel Button */}
-          <Button
+          {/* Cancel X Button - Pill shaped with gradient border on hover */}
+          <button
             onClick={onCancel}
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0 rounded-full border border-gray-300 hover:bg-gray-100 hover:border-gray-400 flex-shrink-0"
+            className="abb-cancel-pill-button group flex items-center justify-center flex-shrink-0 transition-all duration-200"
+            style={{
+              fontFamily: 'var(--font-abb-voice)',
+              fontWeight: 400,
+            }}
           >
-            <X className="w-4 h-4" />
-          </Button>
+            <span className="flex items-center gap-2">
+              <span className="text-sm">Cancel</span>
+              <CloseIcon className="w-4 h-4" />
+            </span>
+          </button>
       </div>
     </div>
   )

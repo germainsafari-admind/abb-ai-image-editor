@@ -89,6 +89,9 @@ logs
 # Turbo
 .turbo
 
+# Hugging Face repository (separate git repo)
+/abbaiphotoeditor/
+
 # Jupyter Notebooks
 *.ipynb
 .ipynb_checkpoints

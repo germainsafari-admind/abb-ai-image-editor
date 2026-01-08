@@ -1,11 +1,13 @@
 "use client"
 
-import { useState, useRef, useEffect, useCallback } from "react"
-import { ChevronLeft, Check, RotateCcw } from "lucide-react"
+import { useState, useRef, useEffect, useCallback, useMemo } from "react"
+import { ChevronLeft } from "lucide-react"
+import { CheckIcon, RetryIcon } from "@/components/icons/abb-icons"
 import type { ImageState, EditorMode, CropDimensions } from "@/types/editor"
 import CropPresetTray from "@/components/editor/crop-preset-tray"
 import { CROP_CATEGORIES, type CategoryPreset } from "@/lib/crop-presets"
 import AILoadingPopup from "@/components/editor/ai-loading-popup"
+import { useViewportSize, calculateEditorMaxHeight } from "@/hooks/use-viewport-size"
 
 interface EditorCanvasProps {
   imageState: ImageState
@@ -48,6 +50,17 @@ export default function EditorCanvas({
   const [isGenerating, setIsGenerating] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
+
+  // Blur animation state
+  const [isBlurAnimating, setIsBlurAnimating] = useState(false)
+  const prevBlurredRef = useRef(false)
+  
+  // Viewport-aware sizing
+  const viewport = useViewportSize()
+  const dynamicMaxHeight = useMemo(() => 
+    calculateEditorMaxHeight(viewport.height, viewport.isShortScreen, viewport.isVeryShortScreen),
+    [viewport.height, viewport.isShortScreen, viewport.isVeryShortScreen]
+  )
 
   // Get current category (fallback to first for safety)
   const currentCategory =
@@ -107,6 +120,19 @@ export default function EditorCanvas({
       setCropInitialized(false)
     }
   }, [editorMode])
+
+  // Trigger blur animation when blur is activated
+  useEffect(() => {
+    if (imageState.isBlurred && !prevBlurredRef.current) {
+      // Blur was just activated - trigger animation
+      setIsBlurAnimating(true)
+      const timer = setTimeout(() => {
+        setIsBlurAnimating(false)
+      }, 1000) // Animation duration
+      return () => clearTimeout(timer)
+    }
+    prevBlurredRef.current = imageState.isBlurred
+  }, [imageState.isBlurred])
 
   // Notify parent when crop preset selection changes
   useEffect(() => {
@@ -433,7 +459,7 @@ export default function EditorCanvas({
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {editorMode === "crop" && cropInitialized && (
-        <div className="bg-background border-b border-border px-4 py-3">
+        <div className="bg-background border-b border-border px-4 py-3 flex-shrink-0">
           <div className="max-w-6xl mx-auto flex items-center justify-between px-0 sm:px-2">
             <div className="flex items-center gap-3">
               <button
@@ -446,12 +472,12 @@ export default function EditorCanvas({
               <span className="font-medium">
                 {isCustom ? "Custom resolution:" : `${currentCategory.label} format:`}
                 {selectedPreset && (
-                  <span className="text-[#7C3AED] font-medium ml-1">
+                  <span className="text-[#6764F6] font-medium ml-1">
                     {selectedPreset.label} ({selectedPreset.displayRatio})
                   </span>
                 )}
                 {isCustom && customRatioWidth && customRatioHeight && (
-                  <span className="text-[#7C3AED] font-medium ml-1">
+                  <span className="text-[#6764F6] font-medium ml-1">
                     {customRatioWidth}:{customRatioHeight}
                   </span>
                 )}
@@ -464,18 +490,9 @@ export default function EditorCanvas({
         </div>
       )}
 
-      {/* View mode dimensions */}
-      {editorMode === "view" && (
-        <div className="flex justify-end px-4 sm:px-6 pt-4">
-          <div className="text-xs sm:text-sm text-muted-foreground">
-            {imageState.width} x {imageState.height} px
-          </div>
-        </div>
-      )}
-
       <div
         ref={containerRef}
-        className="flex-1 flex items-center justify-center px-4 pt-4 pb-2 sm:px-6 sm:pt-6 sm:pb-3 lg:px-8 lg:pt-8 lg:pb-4 overflow-auto"
+        className="flex-1 flex items-center justify-center px-4 py-2 sm:px-6 sm:py-3 lg:px-8 lg:py-4 overflow-hidden"
       >
         {/* AI Result Split View */}
         {editorMode === "ai-result" && aiEditResult && (
@@ -487,7 +504,8 @@ export default function EditorCanvas({
                   <img
                     src={aiEditResult.beforeUrl || "/placeholder.svg"}
                     alt="Before"
-                    className="w-full h-auto max-h-[35vh] sm:max-h-[40vh] md:max-h-[45vh] object-contain"
+                    className="w-full h-auto object-contain transition-[max-height] duration-200"
+                    style={{ maxHeight: `calc(${dynamicMaxHeight} * 0.7)` }}
                   />
                 </div>
               </div>
@@ -497,17 +515,33 @@ export default function EditorCanvas({
                   <img
                     src={aiEditResult.afterUrl || "/placeholder.svg"}
                     alt="After"
-                    className="w-full h-auto max-h-[35vh] sm:max-h-[40vh] md:max-h-[45vh] object-contain"
+                    className="w-full h-auto object-contain transition-[max-height] duration-200"
+                    style={{ maxHeight: `calc(${dynamicMaxHeight} * 0.7)` }}
                   />
                 </div>
               </div>
             </div>
 
             {/* Done message with Retry/Apply */}
-            <div className="mt-6 bg-white rounded-full shadow-lg px-6 py-3 flex items-center gap-4">
+            <div 
+              className="mt-6 bg-white flex items-center justify-between mx-auto"
+              style={{
+                width: '664px',
+                height: '88px',
+                borderRadius: '16px',
+                padding: '20px 24px',
+                boxShadow: '0 0 58.2px rgba(0, 0, 0, 0.1)',
+                fontFamily: 'var(--font-abb-voice)',
+              }}
+            >
               <div className="flex items-center gap-2">
-                <Check className="w-5 h-5 text-green-500" />
-                <span className="text-sm font-medium">Done! How do you like it?</span>
+                <CheckIcon className="flex-shrink-0" />
+                <span 
+                  className="text-sm"
+                  style={{ fontWeight: 400 }}
+                >
+                  Done! How do you like it?
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -515,13 +549,30 @@ export default function EditorCanvas({
                     onAIEditResult(null)
                     onModeChange("ai-edit")
                   }}
-                  className="flex items-center gap-1.5 px-4 py-2 border border-border rounded-full text-sm font-medium hover:bg-muted transition-colors"
+                  className="flex items-center gap-2 px-4 border-2 border-black rounded-full hover:bg-gray-50 transition-colors"
+                  style={{
+                    fontFamily: 'var(--font-abb-voice)',
+                    fontWeight: 500,
+                    fontSize: '12px',
+                    lineHeight: '100%',
+                    color: '#1F1F1F',
+                    height: '48px',
+                    borderRadius: '28px',
+                  }}
                 >
-                  Retry <RotateCcw className="w-4 h-4" />
+                  Retry <RetryIcon />
                 </button>
                 <button
                   onClick={() => onAIEditApply(aiEditResult.afterUrl)}
-                  className="px-6 py-2 bg-[#E30613] hover:bg-[#c70510] text-white rounded-full text-sm font-medium transition-colors"
+                  className="px-4 bg-[#E30613] hover:bg-[#c70510] text-white rounded-full transition-colors"
+                  style={{
+                    fontFamily: 'var(--font-abb-voice)',
+                    fontWeight: 500,
+                    fontSize: '12px',
+                    lineHeight: '100%',
+                    height: '48px',
+                    borderRadius: '28px',
+                  }}
                 >
                   Apply
                 </button>
@@ -533,17 +584,41 @@ export default function EditorCanvas({
         {/* Normal view or crop mode */}
         {(editorMode === "view" || editorMode === "crop" || editorMode === "ai-edit") && (
           <div className="relative w-full max-w-6xl flex flex-col items-center">
+            {/* Image dimensions - always visible, fixed position at top right of image area */}
+            <div className="w-full max-w-5xl mx-auto flex justify-end px-4 sm:px-6 mb-2">
+              <div className="text-xs sm:text-sm text-muted-foreground">
+                {imageState.width} x {imageState.height} px
+              </div>
+            </div>
             {/* Image card */}
-            <div className="relative w-full max-w-5xl mx-auto rounded-lg overflow-hidden shadow-lg bg-muted/40">
-              <img
-                ref={imageRef}
-                src={imageState.currentUrl || "/placeholder.svg"}
-                alt="Editor canvas"
-                className={`w-full h-auto max-h-[50vh] sm:max-h-[55vh] md:max-h-[60vh] lg:max-h-[65vh] object-contain mx-auto ${
-                  imageState.isBlurred ? "blur-md" : ""
-                }`}
-                crossOrigin="anonymous"
-              />
+            <div className="relative w-full max-w-5xl mx-auto overflow-hidden bg-muted/40">
+              <div className="relative w-full flex items-center justify-center overflow-hidden">
+                {/* Original image */}
+                <img
+                  ref={imageRef}
+                  src={imageState.currentUrl || "/placeholder.svg"}
+                  alt="Editor canvas"
+                  className="w-full h-auto object-contain relative z-0 block transition-[max-height] duration-200"
+                  style={{ maxHeight: dynamicMaxHeight }}
+                  crossOrigin="anonymous"
+                />
+                
+                {/* Blurred overlay - progressive animation from left to right */}
+                {imageState.isBlurred && (
+                  <img
+                    src={imageState.currentUrl || "/placeholder.svg"}
+                    alt="Blurred"
+                    className={`absolute top-0 left-0 w-full h-auto object-contain blur-md z-10 block transition-[max-height] duration-200 ${
+                      isBlurAnimating ? "blur-progressive-animation" : ""
+                    }`}
+                    style={{ 
+                      maxHeight: dynamicMaxHeight,
+                      clipPath: isBlurAnimating ? undefined : "inset(0 0 0 0)",
+                    }}
+                    crossOrigin="anonymous"
+                  />
+                )}
+              </div>
 
               {/* Crop overlay - only show after a preset is selected */}
               {showCropOverlay && imageRef.current && (
@@ -614,48 +689,57 @@ export default function EditorCanvas({
               )}
             </div>
 
-            {/* AI Edit input panel - positioned at bottom of image */}
+            {/* AI Edit input panel - positioned overlapping image like crop card */}
             {editorMode === "ai-edit" && !isGenerating && (
-              <div className="absolute bottom-4 left-4 right-4">
-                <div className="bg-white rounded-xl shadow-2xl p-4 max-w-xl mx-auto">
-                  <input
-                    type="text"
-                    value={aiPrompt}
-                    onChange={(e) => setAiPrompt(e.target.value)}
-                    placeholder="Describe what you would like to change..."
-                    className="w-full p-3 border-0 bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none text-sm"
-                    onKeyDown={(e) => e.key === "Enter" && handleAIGenerate()}
-                    disabled={isGenerating}
-                  />
+              <div
+                className="absolute inset-x-0 bottom-0 flex justify-center pointer-events-none pb-4"
+                style={{ transform: "translateY(24px)" }}
+              >
+                <div className="w-full max-w-[664px] px-4 pointer-events-auto">
+                  <div 
+                    className="bg-white rounded-lg shadow-[0_0_58.2px_rgba(0,0,0,0.1)] py-5 px-6"
+                    style={{ gap: "16px" }}
+                  >
+                    <input
+                      type="text"
+                      value={aiPrompt}
+                      onChange={(e) => setAiPrompt(e.target.value)}
+                      placeholder="Describe what you would like to change..."
+                      className="w-full p-3 border-0 bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none text-sm"
+                      onKeyDown={(e) => e.key === "Enter" && handleAIGenerate()}
+                      disabled={isGenerating}
+                    />
 
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
-                    <div className="flex flex-wrap gap-2">
-                      {["Remove background", "Add object", "Change background"].map((preset) => (
-                        <button
-                          key={preset}
-                          onClick={() => handlePresetClick(preset)}
-                          className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
-                            aiPrompt === preset
-                              ? "bg-foreground text-background border-foreground"
-                              : "border-border hover:border-foreground"
-                          }`}
-                          disabled={isGenerating}
-                        >
-                          {preset}
-                        </button>
-                      ))}
+                    <div className="flex items-center justify-between mt-4">
+                      <div className="flex flex-wrap gap-2">
+                        {["Remove background", "Add object", "Change background"].map((preset) => (
+                          <button
+                            key={preset}
+                            onClick={() => handlePresetClick(preset)}
+                            className={`text-xs font-medium rounded-2xl border transition-colors flex items-center ${
+                              aiPrompt === preset
+                                ? "bg-[#6764F6] text-white border-[#6764F6]"
+                                : "bg-white text-gray-700 border-gray-300 hover:bg-[#E4E7FF] hover:text-gray-900 hover:border-[#E4E7FF]"
+                            }`}
+                            style={{ paddingTop: "9px", paddingBottom: "9px", paddingLeft: "8px", paddingRight: "8px" }}
+                            disabled={isGenerating}
+                          >
+                            {preset}
+                          </button>
+                        ))}
+                      </div>
+
+                      <button
+                        onClick={handleAIGenerate}
+                        disabled={!aiPrompt.trim() || isGenerating}
+                        className="h-10 px-4 bg-[#EE0000] hover:bg-[#c70510] text-white rounded-full text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
+                      >
+                        {isGenerating ? "Generating..." : "Generate"}
+                      </button>
                     </div>
 
-                    <button
-                      onClick={handleAIGenerate}
-                      disabled={!aiPrompt.trim() || isGenerating}
-                      className="px-6 py-2 bg-[#E30613] hover:bg-[#c70510] text-white rounded-full text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {isGenerating ? "Generating..." : "Generate"}
-                    </button>
+                    {aiError && <div className="mt-3 p-2 bg-red-50 text-red-600 text-sm rounded-lg">{aiError}</div>}
                   </div>
-
-                  {aiError && <div className="mt-3 p-2 bg-red-50 text-red-600 text-sm rounded-lg">{aiError}</div>}
                 </div>
               </div>
             )}
