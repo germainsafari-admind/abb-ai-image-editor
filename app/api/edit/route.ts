@@ -43,16 +43,20 @@ async function downloadImage(url: string): Promise<Buffer> {
 }
 
 async function callFluxAPI(
-  imageUrl: string, 
-  prompt: string, 
+  imageUrl: string,
+  prompt: string,
   presets: string[],
   width?: number,
-  height?: number
+  height?: number,
 ): Promise<string> {
   const fluxApiKey = process.env.FLUX_KONTEXT_API_KEY
   if (!fluxApiKey) {
     throw new Error("FLUX_KONTEXT_API_KEY not configured. Please add your Flux API key.")
   }
+
+  // Allow overriding the Flux endpoint via env, but default to the correct .ai host
+  const fluxApiUrl =
+    process.env.FLUX_KONTEXT_API_URL || "https://api.bfl.ai/v1/flux-kontext-pro"
 
   // Build the prompt with presets
   let fullPrompt = prompt
@@ -61,13 +65,15 @@ async function callFluxAPI(
   if (presets.includes("change-bg")) fullPrompt += " Change to a professional studio background"
 
   // Calculate aspect ratio from original image dimensions, default to 1:1 if not provided
-  const aspectRatio = (width && height) ? getClosestAspectRatio(width, height) : "1:1"
-  
-  console.log(`Using aspect ratio: ${aspectRatio} for original dimensions ${width}x${height}`)
+  const aspectRatio = width && height ? getClosestAspectRatio(width, height) : "1:1"
+
+  console.log(
+    `Using aspect ratio: ${aspectRatio} for original dimensions ${width}x${height}. Flux URL: ${fluxApiUrl}`,
+  )
 
   try {
     // Call BFL Flux Kontext API for image editing
-    const response = await fetch("https://api.bfl.ml/v1/flux-kontext-pro", {
+    const response = await fetch(fluxApiUrl, {
       method: "POST",
       headers: {
         "X-Key": fluxApiKey,
@@ -104,6 +110,15 @@ async function callFluxAPI(
     return data.sample || data.result?.sample || imageUrl
   } catch (error: any) {
     console.error("Flux API error:", error)
+
+    // Make network / timeout errors clearer
+    const code = error?.code ?? error?.cause?.code
+    if (code === "UND_ERR_CONNECT_TIMEOUT") {
+      throw new Error(
+        "Could not reach the Flux AI service (network timeout). Please check your internet/VPN or firewall settings and try again.",
+      )
+    }
+
     throw error
   }
 }
@@ -115,7 +130,7 @@ async function pollForResult(taskId: string, apiKey: string): Promise<string> {
   for (let i = 0; i < maxAttempts; i++) {
     await new Promise((resolve) => setTimeout(resolve, pollInterval))
 
-    const response = await fetch(`https://api.bfl.ml/v1/get_result?id=${taskId}`, {
+    const response = await fetch(`https://api.bfl.ai/v1/get_result?id=${taskId}`, {
       headers: {
         "X-Key": apiKey,
       },

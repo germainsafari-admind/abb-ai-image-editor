@@ -2,8 +2,9 @@
 
 import { useState, useCallback, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
+import { ChevronLeft } from "lucide-react"
 import Header from "@/components/header"
-import EditorCanvas from "@/components/editor/editor-canvas"
+import EditorCanvas, { CropHeaderInfo } from "@/components/editor/editor-canvas"
 import ControlsRow from "@/components/editor/controls-row"
 import type { ImageState, EditHistoryItem, EditorMode } from "@/types/editor"
 
@@ -21,6 +22,7 @@ export default function EditorPage() {
   const [editorMode, setEditorMode] = useState<EditorMode>("view")
   const [aiEditResult, setAiEditResult] = useState<{ beforeUrl: string; afterUrl: string } | null>(null)
   const [hasCropPresetSelected, setHasCropPresetSelected] = useState(false)
+  const [cropHeaderInfo, setCropHeaderInfo] = useState<CropHeaderInfo>({ isActive: false })
 
   // Check for color correction banner flag
   useEffect(() => {
@@ -107,13 +109,20 @@ export default function EditorPage() {
 
   const handleBlur = useCallback(() => {
     if (!imageState) return
+
+    // If we're in crop or AI edit mode, switch to view mode first
+    if (editorMode === "crop" || editorMode === "ai-edit" || editorMode === "ai-result") {
+      setEditorMode("view")
+      setAiEditResult(null)
+    }
+
     const newState = { ...imageState, isBlurred: !imageState.isBlurred }
     addToHistory(newState)
     if (!imageState.isBlurred) {
       setShowBlurNotification(true)
       setTimeout(() => setShowBlurNotification(false), 4000)
     }
-  }, [imageState, addToHistory])
+  }, [imageState, addToHistory, editorMode])
 
   const handleCropApply = useCallback(
     (croppedImageUrl: string, newWidth: number, newHeight: number) => {
@@ -148,11 +157,19 @@ export default function EditorPage() {
   )
 
   const handleModeChange = useCallback((mode: EditorMode) => {
+    // If switching to crop or AI edit mode and blur is active, disable blur first
+    if ((mode === "crop" || mode === "ai-edit") && imageState?.isBlurred) {
+      const newState = { ...imageState, isBlurred: false }
+      addToHistory(newState)
+    }
+
     setEditorMode(mode)
     if (mode !== "ai-result") {
       setAiEditResult(null)
     }
-  }, [])
+  }, [imageState, addToHistory])
+
+  const hasAnyBanner = showColorCorrectionBanner || showBlurNotification
 
   if (!imageState) {
     return (
@@ -163,61 +180,104 @@ export default function EditorPage() {
   }
 
   return (
-    <div className="h-dvh max-h-dvh bg-background flex flex-col overflow-hidden">
+    <div className="h-dvh max-h-dvh bg-background flex flex-col overflow-hidden relative">
       <Header />
 
-      {/* Color Correction Info Banner */}
-      {showColorCorrectionBanner && (
-        <div 
-          className="px-4 sm:px-6 mt-4 animate-slide-down"
-          style={{
-            animation: 'slideDown 0.4s ease-out forwards',
-          }}
-        >
-          <div className="max-w-5xl mx-auto bg-[#EBF1FF] rounded-xl px-4 py-3 flex items-center gap-3">
-            <div className="flex-shrink-0">
-              <svg className="w-5 h-5" fill="#0F0F0F" viewBox="0 0 16 16">
-                <path d="M8 0C3.58172 0 0 3.58172 0 8C0 12.4183 3.58172 16 8 16C12.4183 16 16 12.4183 16 8C16 3.58172 12.4183 0 8 0ZM8.99976 8V12C8.99976 12.5523 8.55204 13 7.99976 13C7.44747 13 6.99976 12.5523 6.99976 12V8C6.99976 7.44772 7.44747 7 7.99976 7C8.55204 7 8.99976 7.44772 8.99976 8ZM9.25037 4.25195C9.25037 4.94231 8.69072 5.50195 8.00037 5.50195C7.31001 5.50195 6.75037 4.94231 6.75037 4.25195C6.75037 3.5616 7.31001 3.00195 8.00037 3.00195C8.69072 3.00195 9.25037 3.5616 9.25037 4.25195Z" />
-              </svg>
-            </div>
-            <p className="text-sm text-gray-700 flex-1">
-              Your image has been automatically color corrected.
-            </p>
-            <button
-              onClick={() => setShowColorCorrectionBanner(false)}
-              className="flex-shrink-0 text-gray-500 hover:text-gray-700 transition-colors p-1"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+      {/* Banner / crop-header region between navbar and image container.
+          We always reserve vertical space here so the image card never moves
+          when banners or crop headers appear or disappear. */}
+      <div className="flex-shrink-0 px-4 sm:px-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="mt-2 mb-2 min-h-[56px] flex flex-col gap-2">
+            {showColorCorrectionBanner && (
+              <div className="bg-[#EBF1FF] rounded-xl px-4 py-3 flex items-center gap-3 shadow-sm animate-slide-down">
+                <div className="flex-shrink-0">
+                  <svg className="w-5 h-5" fill="#0F0F0F" viewBox="0 0 16 16">
+                    <path d="M8 0C3.58172 0 0 3.58172 0 8C0 12.4183 3.58172 16 8 16C12.4183 16 16 12.4183 16 8C16 3.58172 12.4183 0 8 0ZM8.99976 8V12C8.99976 12.5523 8.55204 13 7.99976 13C7.44747 13 6.99976 12.5523 6.99976 12V8C6.99976 7.44772 7.44747 7 7.99976 7C8.55204 7 8.99976 7.44772 8.99976 8ZM9.25037 4.25195C9.25037 4.94231 8.69072 5.50195 8.00037 5.50195C7.31001 5.50195 6.75037 4.94231 6.75037 4.25195C6.75037 3.5616 7.31001 3.00195 8.00037 3.00195C8.69072 3.00195 9.25037 3.5616 9.25037 4.25195Z" />
+                  </svg>
+                </div>
+                <p className="text-sm text-gray-700 flex-1">
+                  Your image has been automatically color corrected.
+                </p>
+                <button
+                  onClick={() => setShowColorCorrectionBanner(false)}
+                  className="flex-shrink-0 text-gray-500 hover:text-gray-700 transition-colors p-1"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            )}
+
+            {showBlurNotification && (
+              <div className="bg-[#EBF1FF] rounded-xl px-4 py-3 flex items-center gap-3 shadow-sm animate-slide-down">
+                <div className="flex-shrink-0">
+                  <svg className="w-5 h-5" fill="#0F0F0F" viewBox="0 0 16 16">
+                    <path d="M8 0C3.58172 0 0 3.58172 0 8C0 12.4183 3.58172 16 8 16C12.4183 16 16 12.4183 16 8C16 3.58172 12.4183 0 8 0ZM8.99976 8V12C8.99976 12.5523 8.55204 13 7.99976 13C7.44747 13 6.99976 12.5523 6.99976 12V8C6.99976 7.44772 7.44747 7 7.99976 7C8.55204 7 8.99976 7.44772 8.99976 8ZM9.25037 4.25195C9.25037 4.94231 8.69072 5.50195 8.00037 5.50195C7.31001 5.50195 6.75037 4.94231 6.75037 4.25195C6.75037 3.5616 7.31001 3.00195 8.00037 3.00195C8.69072 3.00195 9.25037 3.5616 9.25037 4.25195Z" />
+                  </svg>
+                </div>
+                <p className="text-sm text-gray-700 flex-1">
+                  Your image has been automatically blurred.
+                </p>
+                <button
+                  onClick={() => setShowBlurNotification(false)}
+                  className="flex-shrink-0 text-gray-500 hover:text-gray-700 transition-colors p-1"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            )}
+
+            {/* Crop mode header lives in the same vertical slot as banners when no banner is visible */}
+            {!hasAnyBanner && editorMode === "crop" && cropHeaderInfo.isActive && (
+              <div className="bg-background rounded-xl px-0 sm:px-2 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => handleModeChange("view")}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Back"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <span className="text-sm font-medium">
+                    {cropHeaderInfo.isCustom
+                      ? "Custom resolution:"
+                      : `${cropHeaderInfo.categoryLabel ?? ""} format:`}
+                    {cropHeaderInfo.selectedPresetLabel && cropHeaderInfo.selectedPresetDisplayRatio && (
+                      <span className="text-[#6764F6] font-medium ml-1">
+                        {cropHeaderInfo.selectedPresetLabel} ({cropHeaderInfo.selectedPresetDisplayRatio})
+                      </span>
+                    )}
+                    {cropHeaderInfo.isCustom &&
+                      cropHeaderInfo.customRatioWidth &&
+                      cropHeaderInfo.customRatioHeight && (
+                        <span className="text-[#6764F6] font-medium ml-1">
+                          {cropHeaderInfo.customRatioWidth}:{cropHeaderInfo.customRatioHeight}
+                        </span>
+                      )}
+                  </span>
+                </div>
+                <div className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
+                  {cropHeaderInfo.widthPx && cropHeaderInfo.heightPx
+                    ? `${cropHeaderInfo.widthPx} x ${cropHeaderInfo.heightPx} px`
+                    : `${imageState.width} x ${imageState.height} px`}
+                </div>
+              </div>
+            )}
+
+            {/* When no banners are visible, keep the vertical space so the
+                image card and overlays do not shift up or down. */}
+            {!hasAnyBanner && !(editorMode === "crop" && cropHeaderInfo.isActive) && (
+              <div className="h-[56px]" aria-hidden="true" />
+            )}
           </div>
         </div>
-      )}
+      </div>
 
-      {showBlurNotification && (
-        <div className="bg-blue-50 border-b border-blue-200 px-4 py-2">
-          <div className="max-w-5xl mx-auto flex items-center gap-2 text-sm text-blue-800">
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path
-                fillRule="evenodd"
-                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                clipRule="evenodd"
-              />
-            </svg>
-            Note: Your image has been automatically blurred.
-            <button
-              onClick={() => setShowBlurNotification(false)}
-              className="ml-auto text-blue-600 hover:text-blue-800"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      )}
-
+      {/* Main content area - takes full remaining height */}
       <main className="flex-1 flex flex-col overflow-hidden">
         <EditorCanvas
           imageState={imageState}
@@ -228,6 +288,7 @@ export default function EditorPage() {
           onAIEditResult={setAiEditResult}
           onModeChange={handleModeChange}
           onCropPresetChange={setHasCropPresetSelected}
+          onCropHeaderChange={setCropHeaderInfo}
         />
 
         {/* Controls Row - matches image container max-width */}

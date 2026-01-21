@@ -71,9 +71,8 @@ export default function ControlsRow({
   return (
     <>
       {/* Controls container - matches Figma design */}
-      <div 
-        className="flex justify-center px-4 sm:px-6 flex-shrink-0" 
-        style={{ marginTop: "1px", marginBottom: "24px" }}
+      <div
+        className="flex justify-center px-4 sm:px-6 flex-shrink-0 mt-4 mb-6"
       >
         <div className="w-full max-w-5xl flex justify-center">
           {/* Bottom Bar Component - Rectangular with rounded corners */}

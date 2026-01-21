@@ -9,6 +9,18 @@ import { CROP_CATEGORIES, type CategoryPreset } from "@/lib/crop-presets"
 import AILoadingPopup from "@/components/editor/ai-loading-popup"
 import { useViewportSize, calculateEditorMaxHeight } from "@/hooks/use-viewport-size"
 
+export interface CropHeaderInfo {
+  isActive: boolean
+  isCustom?: boolean
+  categoryLabel?: string
+  selectedPresetLabel?: string
+  selectedPresetDisplayRatio?: string
+  customRatioWidth?: string
+  customRatioHeight?: string
+  widthPx?: number
+  heightPx?: number
+}
+
 interface EditorCanvasProps {
   imageState: ImageState
   editorMode: EditorMode
@@ -18,6 +30,7 @@ interface EditorCanvasProps {
   onAIEditResult: (result: { beforeUrl: string; afterUrl: string } | null) => void
   onModeChange: (mode: EditorMode) => void
   onCropPresetChange?: (hasPreset: boolean) => void
+  onCropHeaderChange?: (info: CropHeaderInfo) => void
 }
 
 export default function EditorCanvas({
@@ -29,6 +42,7 @@ export default function EditorCanvas({
   onAIEditResult,
   onModeChange,
   onCropPresetChange,
+  onCropHeaderChange,
 }: EditorCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const imageRef = useRef<HTMLImageElement>(null)
@@ -139,6 +153,43 @@ export default function EditorCanvas({
     const hasPreset = selectedPreset !== null || isCustom
     onCropPresetChange?.(hasPreset && cropInitialized)
   }, [selectedPreset, isCustom, cropInitialized, onCropPresetChange])
+
+  // Notify parent with crop header info so it can be rendered
+  // in the shared banner/header region above the image card.
+  useEffect(() => {
+    if (!onCropHeaderChange) return
+
+    // Header should only be active while in crop mode AND after a category
+    // has been explicitly selected by the user. This prevents showing
+    // "Media Bank format:" before the user makes a choice.
+    if (editorMode !== "crop" || !selectedCategory) {
+      onCropHeaderChange({ isActive: false })
+      return
+    }
+
+    onCropHeaderChange({
+      isActive: true,
+      isCustom,
+      categoryLabel: currentCategory.label,
+      selectedPresetLabel: selectedPreset?.label,
+      selectedPresetDisplayRatio: selectedPreset?.displayRatio,
+      customRatioWidth,
+      customRatioHeight,
+      widthPx: displayedDims.width,
+      heightPx: displayedDims.height,
+    })
+  }, [
+    editorMode,
+    isCustom,
+    selectedCategory,
+    currentCategory.label,
+    selectedPreset,
+    customRatioWidth,
+    customRatioHeight,
+    displayedDims.width,
+    displayedDims.height,
+    onCropHeaderChange,
+  ])
 
   // Calculate displayed dimensions when crop is active
   useEffect(() => {
@@ -457,39 +508,8 @@ export default function EditorCanvas({
   }
 
   return (
-    <div className="flex-1 flex flex-col overflow-hidden">
-      {editorMode === "crop" && cropInitialized && (
-        <div className="bg-background border-b border-border px-4 py-3 flex-shrink-0">
-          <div className="max-w-6xl mx-auto flex items-center justify-between px-0 sm:px-2">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => onModeChange("view")}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-                aria-label="Back"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <span className="font-medium">
-                {isCustom ? "Custom resolution:" : `${currentCategory.label} format:`}
-                {selectedPreset && (
-                  <span className="text-[#6764F6] font-medium ml-1">
-                    {selectedPreset.label} ({selectedPreset.displayRatio})
-                  </span>
-                )}
-                {isCustom && customRatioWidth && customRatioHeight && (
-                  <span className="text-[#6764F6] font-medium ml-1">
-                    {customRatioWidth}:{customRatioHeight}
-                  </span>
-                )}
-              </span>
-            </div>
-            <div className="text-sm text-muted-foreground">
-              {displayedDims.width} x {displayedDims.height} px
-            </div>
-          </div>
-        </div>
-      )}
-
+    <div className="relative flex-1 flex flex-col overflow-hidden">
+      {/* Main canvas container - flex-1 to fill available space */}
       <div
         ref={containerRef}
         className="flex-1 flex items-center justify-center px-4 py-2 sm:px-6 sm:py-3 lg:px-8 lg:py-4 overflow-hidden"
@@ -523,14 +543,13 @@ export default function EditorCanvas({
             </div>
 
             {/* Done message with Retry/Apply */}
-            <div 
-              className="mt-6 bg-white flex items-center justify-between mx-auto"
+            <div
+              className="mt-6 bg-white rounded-lg shadow-2xl flex items-center justify-between mx-auto"
               style={{
                 width: '664px',
                 height: '88px',
-                borderRadius: '16px',
                 padding: '20px 24px',
-                boxShadow: '0 0 58.2px rgba(0, 0, 0, 0.1)',
+                boxShadow: '0 0 58.2px 0 rgba(0, 0, 0, 0.25)',
                 fontFamily: 'var(--font-abb-voice)',
               }}
             >
@@ -581,200 +600,233 @@ export default function EditorCanvas({
           </div>
         )}
 
-        {/* Normal view or crop mode */}
+        {/* Normal view, crop mode, or AI edit mode */}
         {(editorMode === "view" || editorMode === "crop" || editorMode === "ai-edit") && (
-          <div className="relative w-full max-w-6xl flex flex-col items-center">
-            {/* Image dimensions - always visible, fixed position at top right of image area */}
-            <div className="w-full max-w-5xl mx-auto flex justify-end px-4 sm:px-6 mb-2">
-              <div className="text-xs sm:text-sm text-muted-foreground">
-                {imageState.width} x {imageState.height} px
-              </div>
-            </div>
-            {/* Image card */}
-            <div className="relative w-full max-w-5xl mx-auto overflow-hidden bg-muted/40">
-              <div className="relative w-full flex items-center justify-center overflow-hidden">
-                {/* Original image */}
-                <img
-                  ref={imageRef}
-                  src={imageState.currentUrl || "/placeholder.svg"}
-                  alt="Editor canvas"
-                  className="w-full h-auto object-contain relative z-0 block transition-[max-height] duration-200"
-                  style={{ maxHeight: dynamicMaxHeight }}
-                  crossOrigin="anonymous"
-                />
-                
-                {/* Blurred overlay - progressive animation from left to right */}
-                {imageState.isBlurred && (
+          <div className="relative w-full max-w-5xl flex flex-col items-center">
+            {/* Image card container - this is the stable anchor point */}
+            <div className="relative w-full">
+              {/* Image card - stable container that never moves */}
+              <div className="relative w-full overflow-hidden bg-muted/40">
+                <div className="relative w-full flex items-center justify-center overflow-hidden">
+                  {/* Original image */}
                   <img
+                    ref={imageRef}
                     src={imageState.currentUrl || "/placeholder.svg"}
-                    alt="Blurred"
-                    className={`absolute top-0 left-0 w-full h-auto object-contain blur-md z-10 block transition-[max-height] duration-200 ${
-                      isBlurAnimating ? "blur-progressive-animation" : ""
-                    }`}
-                    style={{ 
-                      maxHeight: dynamicMaxHeight,
-                      clipPath: isBlurAnimating ? undefined : "inset(0 0 0 0)",
-                    }}
+                    alt="Editor canvas"
+                    className="w-full h-auto object-contain relative z-0 block transition-[max-height] duration-200"
+                    style={{ maxHeight: dynamicMaxHeight }}
                     crossOrigin="anonymous"
                   />
-                )}
-              </div>
+                  
+                  {/* Radial blur overlay - multiple layers for center-to-edge blur effect */}
+                  {imageState.isBlurred && (
+                    <>
+                      {/* Strong blur layer for edges - masked to show only outer areas */}
+                      <div
+                        className={`absolute top-0 left-0 w-full h-full z-10 block ${
+                          isBlurAnimating ? "blur-progressive-animation" : ""
+                        }`}
+                      >
+                        <img
+                          src={imageState.currentUrl || "/placeholder.svg"}
+                          alt="Blurred edges"
+                          className="w-full h-full object-contain blur-lg"
+                          style={{
+                            maskImage: 'radial-gradient(circle, transparent 60%, black 80%)',
+                            WebkitMaskImage: 'radial-gradient(circle, transparent 60%, black 80%)',
+                          }}
+                          crossOrigin="anonymous"
+                        />
+                      </div>
 
-              {/* Crop overlay - only show after a preset is selected */}
-              {showCropOverlay && imageRef.current && (
-                <>
-                  {/* Dimmed area outside crop */}
-                  <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute inset-0 bg-black/40" />
+                      {/* Medium blur layer for mid areas */}
+                      <div
+                        className={`absolute top-0 left-0 w-full h-full z-10 block ${
+                          isBlurAnimating ? "blur-progressive-animation" : ""
+                        }`}
+                      >
+                        <img
+                          src={imageState.currentUrl || "/placeholder.svg"}
+                          alt="Blurred mid areas"
+                          className="w-full h-full object-contain blur-md"
+                          style={{
+                            maskImage: 'radial-gradient(circle, transparent 40%, black 60%, transparent 80%)',
+                            WebkitMaskImage: 'radial-gradient(circle, transparent 40%, black 60%, transparent 80%)',
+                          }}
+                          crossOrigin="anonymous"
+                        />
+                      </div>
+
+                      {/* Light blur layer for center */}
+                      <div
+                        className={`absolute top-0 left-0 w-full h-full z-10 block ${
+                          isBlurAnimating ? "blur-progressive-animation" : ""
+                        }`}
+                      >
+                        <img
+                          src={imageState.currentUrl || "/placeholder.svg"}
+                          alt="Blurred center"
+                          className="w-full h-full object-contain blur-sm"
+                          style={{
+                            maskImage: 'radial-gradient(circle, black 40%, transparent 60%)',
+                            WebkitMaskImage: 'radial-gradient(circle, black 40%, transparent 60%)',
+                          }}
+                          crossOrigin="anonymous"
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Crop overlay - only show after a preset is selected */}
+                {showCropOverlay && imageRef.current && (
+                  <>
+                    {/* Dimmed area outside crop */}
+                    <div className="absolute inset-0 pointer-events-none z-20">
+                      <div className="absolute inset-0 bg-black/40" />
+                      <div
+                        className="absolute bg-transparent"
+                        style={{
+                          left: cropDims.x,
+                          top: cropDims.y,
+                          width: cropDims.width,
+                          height: cropDims.height,
+                          boxShadow: "0 0 0 9999px rgba(0,0,0,0.55)",
+                          borderRadius: "0.75rem",
+                        }}
+                      />
+                    </div>
+
+                    {/* Crop rectangle with rounded corners & subtle handles */}
                     <div
-                      className="absolute bg-transparent"
+                      className="absolute border border-white/90 rounded-xl cursor-move z-30"
                       style={{
                         left: cropDims.x,
                         top: cropDims.y,
                         width: cropDims.width,
                         height: cropDims.height,
-                        boxShadow: "0 0 0 9999px rgba(0,0,0,0.55)",
-                        borderRadius: "0.75rem",
                       }}
-                    />
-                  </div>
-
-                  {/* Crop rectangle with rounded corners & subtle handles */}
-                  <div
-                    className="absolute border border-white/90 rounded-xl cursor-move"
-                    style={{
-                      left: cropDims.x,
-                      top: cropDims.y,
-                      width: cropDims.width,
-                      height: cropDims.height,
-                    }}
-                    onMouseDown={(e) => handleMouseDown(e, "move")}
-                  >
-                    {/* Corner handles */}
-                    <div
-                      className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white rounded-sm shadow cursor-nwse-resize"
-                      onMouseDown={(e) => handleMouseDown(e, "nw")}
-                    />
-                    <div
-                      className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-white rounded-sm shadow cursor-nesw-resize"
-                      onMouseDown={(e) => handleMouseDown(e, "ne")}
-                    />
-                    <div
-                      className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white rounded-sm shadow cursor-nesw-resize"
-                      onMouseDown={(e) => handleMouseDown(e, "sw")}
-                    />
-                    <div
-                      className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white rounded-sm shadow cursor-nwse-resize"
-                      onMouseDown={(e) => handleMouseDown(e, "se")}
-                    />
-                    {/* Edge handles */}
-                    <div
-                      className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-8 h-1.5 bg-white rounded-full shadow cursor-ns-resize"
-                      onMouseDown={(e) => handleMouseDown(e, "n")}
-                    />
-                    <div
-                      className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-8 h-1.5 bg-white rounded-full shadow cursor-ns-resize"
-                      onMouseDown={(e) => handleMouseDown(e, "s")}
-                    />
-                    <div
-                      className="absolute top-1/2 -left-1.5 -translate-y-1/2 w-1.5 h-8 bg-white rounded-full shadow cursor-ew-resize"
-                      onMouseDown={(e) => handleMouseDown(e, "w")}
-                    />
-                    <div
-                      className="absolute top-1/2 -right-1.5 -translate-y-1/2 w-1.5 h-8 bg-white rounded-full shadow cursor-ew-resize"
-                      onMouseDown={(e) => handleMouseDown(e, "e")}
-                    />
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* AI Edit input panel - positioned overlapping image like crop card */}
-            {editorMode === "ai-edit" && !isGenerating && (
-              <div
-                className="absolute inset-x-0 bottom-0 flex justify-center pointer-events-none pb-4"
-                style={{ transform: "translateY(24px)" }}
-              >
-                <div className="w-full max-w-[664px] px-4 pointer-events-auto">
-                  <div 
-                    className="bg-white rounded-lg shadow-[0_0_58.2px_rgba(0,0,0,0.1)] py-5 px-6"
-                    style={{ gap: "16px" }}
-                  >
-                    <input
-                      type="text"
-                      value={aiPrompt}
-                      onChange={(e) => setAiPrompt(e.target.value)}
-                      placeholder="Describe what you would like to change..."
-                      className="w-full p-3 border-0 bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none text-sm"
-                      onKeyDown={(e) => e.key === "Enter" && handleAIGenerate()}
-                      disabled={isGenerating}
-                    />
-
-                    <div className="flex items-center justify-between mt-4">
-                      <div className="flex flex-wrap gap-2">
-                        {["Remove background", "Add object", "Change background"].map((preset) => (
-                          <button
-                            key={preset}
-                            onClick={() => handlePresetClick(preset)}
-                            className={`text-xs font-medium rounded-2xl border transition-colors flex items-center ${
-                              aiPrompt === preset
-                                ? "bg-[#6764F6] text-white border-[#6764F6]"
-                                : "bg-white text-gray-700 border-gray-300 hover:bg-[#E4E7FF] hover:text-gray-900 hover:border-[#E4E7FF]"
-                            }`}
-                            style={{ paddingTop: "9px", paddingBottom: "9px", paddingLeft: "8px", paddingRight: "8px" }}
-                            disabled={isGenerating}
-                          >
-                            {preset}
-                          </button>
-                        ))}
-                      </div>
-
-                      <button
-                        onClick={handleAIGenerate}
-                        disabled={!aiPrompt.trim() || isGenerating}
-                        className="h-10 px-4 bg-[#EE0000] hover:bg-[#c70510] text-white rounded-full text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
-                      >
-                        {isGenerating ? "Generating..." : "Generate"}
-                      </button>
+                      onMouseDown={(e) => handleMouseDown(e, "move")}
+                    >
+                      {/* Corner handles */}
+                      <div
+                        className="absolute -top-1.5 -left-1.5 w-3 h-3 bg-white rounded-sm shadow cursor-nwse-resize"
+                        onMouseDown={(e) => handleMouseDown(e, "nw")}
+                      />
+                      <div
+                        className="absolute -top-1.5 -right-1.5 w-3 h-3 bg-white rounded-sm shadow cursor-nesw-resize"
+                        onMouseDown={(e) => handleMouseDown(e, "ne")}
+                      />
+                      <div
+                        className="absolute -bottom-1.5 -left-1.5 w-3 h-3 bg-white rounded-sm shadow cursor-nesw-resize"
+                        onMouseDown={(e) => handleMouseDown(e, "sw")}
+                      />
+                      <div
+                        className="absolute -bottom-1.5 -right-1.5 w-3 h-3 bg-white rounded-sm shadow cursor-nwse-resize"
+                        onMouseDown={(e) => handleMouseDown(e, "se")}
+                      />
+                      {/* Edge handles */}
+                      <div
+                        className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-8 h-1.5 bg-white rounded-full shadow cursor-ns-resize"
+                        onMouseDown={(e) => handleMouseDown(e, "n")}
+                      />
+                      <div
+                        className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-8 h-1.5 bg-white rounded-full shadow cursor-ns-resize"
+                        onMouseDown={(e) => handleMouseDown(e, "s")}
+                      />
+                      <div
+                        className="absolute top-1/2 -left-1.5 -translate-y-1/2 w-1.5 h-8 bg-white rounded-full shadow cursor-ew-resize"
+                        onMouseDown={(e) => handleMouseDown(e, "w")}
+                      />
+                      <div
+                        className="absolute top-1/2 -right-1.5 -translate-y-1/2 w-1.5 h-8 bg-white rounded-full shadow cursor-ew-resize"
+                        onMouseDown={(e) => handleMouseDown(e, "e")}
+                      />
                     </div>
-
-                    {aiError && <div className="mt-3 p-2 bg-red-50 text-red-600 text-sm rounded-lg">{aiError}</div>}
-                  </div>
-                </div>
+                  </>
+                )}
               </div>
-            )}
-
-            {/* AI Loading Popup - appears in place of AI edit overlay when generating */}
-            {editorMode === "ai-edit" && isGenerating && (
-              <AILoadingPopup onCancel={handleCancelGeneration} />
-            )}
-
-            {/* Crop format tray – floating overlay at bottom of image
-                Show when: no preset selected OR custom mode (to show inputs) */}
-            {editorMode === "crop" && (!selectedPreset || isCustom) && (
-              <div
-                className="absolute inset-x-0 bottom-0 flex justify-center pointer-events-none pb-4"
-                style={{ transform: "translateY(24px)" }}
-              >
-                <div className="w-full max-w-3xl px-4">
-                  <CropPresetTray
-                    categories={CROP_CATEGORIES}
-                    selectedCategory={selectedCategory}
-                    selectedPreset={selectedPreset}
-                    customRatioWidth={customRatioWidth}
-                    customRatioHeight={customRatioHeight}
-                    currentCategoryLabel={currentCategory.label}
-                    onSelectCategory={handleCategorySelect}
-                    onSelectPreset={handlePresetSelect}
-                    onChangeCustomWidth={setCustomRatioWidth}
-                    onChangeCustomHeight={setCustomRatioHeight}
-                  />
-                </div>
-              </div>
-            )}
+            </div>
           </div>
         )}
       </div>
+
+      {/* AI Edit input panel - floating overlay anchored to the outer wrapper */}
+      {editorMode === "ai-edit" && !isGenerating && (
+        <div className="absolute inset-x-0 bottom-0 flex justify-center pointer-events-none z-40 pb-4 translate-y-6">
+          <div className="w-full max-w-[664px] px-4 pointer-events-auto">
+            <div className="bg-white rounded-lg shadow-[0_0_58.2px_rgba(0,0,0,0.1)] py-5 px-6">
+              <input
+                type="text"
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                placeholder="Describe what you would like to change..."
+                className="w-full p-3 border-0 bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none text-sm"
+                onKeyDown={(e) => e.key === "Enter" && handleAIGenerate()}
+                disabled={isGenerating}
+              />
+
+              <div className="flex items-center justify-between mt-4">
+                <div className="flex flex-wrap gap-2">
+                  {["Remove background", "Add object", "Change background"].map((preset) => (
+                    <button
+                      key={preset}
+                      onClick={() => handlePresetClick(preset)}
+                      className={`text-xs font-medium rounded-2xl border transition-colors flex items-center ${
+                        aiPrompt === preset
+                          ? "bg-[#6764F6] text-white border-[#6764F6]"
+                          : "bg-white text-gray-700 border-gray-300 hover:bg-[#E4E7FF] hover:text-gray-900 hover:border-[#E4E7FF]"
+                      }`}
+                      style={{ paddingTop: "9px", paddingBottom: "9px", paddingLeft: "8px", paddingRight: "8px" }}
+                      disabled={isGenerating}
+                    >
+                      {preset}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={handleAIGenerate}
+                  disabled={!aiPrompt.trim() || isGenerating}
+                  className="h-10 px-4 bg-[#EE0000] hover:bg-[#c70510] text-white rounded-full text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
+                >
+                  {isGenerating ? "Generating..." : "Generate"}
+                </button>
+              </div>
+
+              {aiError && <div className="mt-3 p-2 bg-red-50 text-red-600 text-sm rounded-lg">{aiError}</div>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI Loading Popup - appears in place of AI edit overlay when generating */}
+      {editorMode === "ai-edit" && isGenerating && (
+        <div className="absolute inset-x-0 bottom-0 flex justify-center z-40 pb-4 translate-y-6">
+          <AILoadingPopup onCancel={handleCancelGeneration} />
+        </div>
+      )}
+
+      {/* Crop format tray – floating overlay anchored to the outer editor canvas wrapper
+          so it stays stable and visible even as the image size or aspect ratio changes. */}
+      {editorMode === "crop" && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center z-40 pb-4 translate-y-6">
+          <div className="w-full max-w-3xl px-4 pointer-events-auto">
+            <CropPresetTray
+              categories={CROP_CATEGORIES}
+              selectedCategory={selectedCategory}
+              selectedPreset={selectedPreset}
+              customRatioWidth={customRatioWidth}
+              customRatioHeight={customRatioHeight}
+              currentCategoryLabel={currentCategory.label}
+              onSelectCategory={handleCategorySelect}
+              onSelectPreset={handlePresetSelect}
+              onChangeCustomWidth={setCustomRatioWidth}
+              onChangeCustomHeight={setCustomRatioHeight}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
