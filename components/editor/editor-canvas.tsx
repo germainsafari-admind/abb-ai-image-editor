@@ -58,6 +58,7 @@ export default function EditorCanvas({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0, cropX: 0, cropY: 0, cropW: 0, cropH: 0 })
   const [displayedDims, setDisplayedDims] = useState({ width: 0, height: 0 })
   const [cropInitialized, setCropInitialized] = useState(false)
+  const [originalImageDims, setOriginalImageDims] = useState({ width: 0, height: 0 })
 
   // AI Edit state
   const [aiPrompt, setAiPrompt] = useState("")
@@ -83,6 +84,62 @@ export default function EditorCanvas({
   // Determine if crop rectangle should be shown
   const showCropOverlay = editorMode === "crop" && cropInitialized && (selectedPreset !== null || isCustom)
 
+  // Load original image dimensions when imageState changes
+  useEffect(() => {
+    const img = new Image()
+    img.crossOrigin = "anonymous"
+    img.onload = () => {
+      setOriginalImageDims({ width: img.width, height: img.height })
+    }
+    img.src = imageState.originalUrl
+  }, [imageState.originalUrl])
+
+  // Helper to calculate actual displayed image bounds (accounting for object-contain)
+  const getDisplayedImageBounds = useCallback(() => {
+    if (!imageRef.current) return { x: 0, y: 0, width: 0, height: 0 }
+    
+    const rect = imageRef.current.getBoundingClientRect()
+    const img = imageRef.current
+    
+    // In crop mode, we display the original image, so use its natural dimensions
+    // Otherwise, prefer stored original dimensions, then natural dimensions, then fallback
+    let naturalWidth: number
+    let naturalHeight: number
+    
+    if (editorMode === "crop" && img.naturalWidth > 0 && img.naturalHeight > 0) {
+      // In crop mode, the displayed image is the original, so use its natural dimensions
+      naturalWidth = img.naturalWidth
+      naturalHeight = img.naturalHeight
+    } else {
+      // Use stored original dimensions, or natural dimensions, or fallback to current state
+      naturalWidth = originalImageDims.width || img.naturalWidth || imageState.width
+      naturalHeight = originalImageDims.height || img.naturalHeight || imageState.height
+    }
+    
+    // Calculate actual displayed image dimensions (accounting for object-contain)
+    const containerAspect = rect.width / rect.height
+    const imageAspect = naturalWidth / naturalHeight
+    
+    let displayedWidth: number
+    let displayedHeight: number
+    let offsetX = 0
+    let offsetY = 0
+    
+    if (imageAspect > containerAspect) {
+      // Image is wider - fit to width
+      displayedWidth = rect.width
+      displayedHeight = rect.width / imageAspect
+      offsetY = (rect.height - displayedHeight) / 2
+    } else {
+      // Image is taller - fit to height
+      displayedHeight = rect.height
+      displayedWidth = rect.height * imageAspect
+      offsetX = (rect.width - displayedWidth) / 2
+    }
+    
+    return { x: offsetX, y: offsetY, width: displayedWidth, height: displayedHeight }
+  }, [originalImageDims, imageState.width, imageState.height, editorMode])
+
   const getActiveAspectRatio = useCallback(() => {
     if (!isCustom && selectedPreset?.ratio) {
       return selectedPreset.ratio
@@ -104,24 +161,24 @@ export default function EditorCanvas({
   const recenterCropForRatio = useCallback((ratio: number) => {
     if (!imageRef.current) return
 
-    const rect = imageRef.current.getBoundingClientRect()
+    const imageBounds = getDisplayedImageBounds()
 
-    let cropW = rect.width * 0.6
+    let cropW = imageBounds.width * 0.6
     let cropH = cropW / ratio
 
-    if (cropH > rect.height * 0.8) {
-      cropH = rect.height * 0.8
+    if (cropH > imageBounds.height * 0.8) {
+      cropH = imageBounds.height * 0.8
       cropW = cropH * ratio
     }
 
     setCropDims({
-      x: (rect.width - cropW) / 2,
-      y: (rect.height - cropH) / 2,
+      x: imageBounds.x + (imageBounds.width - cropW) / 2,
+      y: imageBounds.y + (imageBounds.height - cropH) / 2,
       width: cropW,
       height: cropH,
     })
     setCropInitialized(true)
-  }, [])
+  }, [getDisplayedImageBounds])
 
   // Reset crop state when exiting crop mode
   useEffect(() => {
@@ -194,16 +251,23 @@ export default function EditorCanvas({
   // Calculate displayed dimensions when crop is active
   useEffect(() => {
     if (editorMode === "crop" && imageRef.current && cropInitialized) {
-      const rect = imageRef.current.getBoundingClientRect()
-      const scaleX = imageState.width / rect.width
-      const scaleY = imageState.height / rect.height
+      const imageBounds = getDisplayedImageBounds()
+      
+      // Load original image to get its dimensions for accurate scaling
+      const originalImg = new Image()
+      originalImg.crossOrigin = "anonymous"
+      originalImg.onload = () => {
+        const scaleX = originalImg.width / imageBounds.width
+        const scaleY = originalImg.height / imageBounds.height
 
-      setDisplayedDims({
-        width: Math.round(cropDims.width * scaleX),
-        height: Math.round(cropDims.height * scaleY),
-      })
+        setDisplayedDims({
+          width: Math.round(cropDims.width * scaleX),
+          height: Math.round(cropDims.height * scaleY),
+        })
+      }
+      originalImg.src = imageState.originalUrl
     }
-  }, [cropDims, editorMode, imageState.width, imageState.height, cropInitialized])
+  }, [cropDims, editorMode, imageState.originalUrl, cropInitialized, getDisplayedImageBounds])
 
   // Listen for apply crop event from controls row
   useEffect(() => {
@@ -272,7 +336,7 @@ export default function EditorCanvas({
     (e: MouseEvent) => {
       if (!isDragging || !imageRef.current) return
 
-      const rect = imageRef.current.getBoundingClientRect()
+      const imageBounds = getDisplayedImageBounds()
       const deltaX = e.clientX - dragStart.x
       const deltaY = e.clientY - dragStart.y
       const minSize = 50
@@ -292,8 +356,8 @@ export default function EditorCanvas({
       }
 
       if (isDragging === "move") {
-        newDims.x = Math.max(0, Math.min(rect.width - dragStart.cropW, dragStart.cropX + deltaX))
-        newDims.y = Math.max(0, Math.min(rect.height - dragStart.cropH, dragStart.cropY + deltaY))
+        newDims.x = Math.max(imageBounds.x, Math.min(imageBounds.x + imageBounds.width - dragStart.cropW, dragStart.cropX + deltaX))
+        newDims.y = Math.max(imageBounds.y, Math.min(imageBounds.y + imageBounds.height - dragStart.cropH, dragStart.cropY + deltaY))
       } else if (isDragging === "nw") {
         if (currentRatio) {
           const newW = Math.max(minSize, dragStart.cropW - deltaX)
@@ -387,15 +451,15 @@ export default function EditorCanvas({
         }
       }
 
-      // Constrain to image bounds
-      newDims.x = Math.max(0, newDims.x)
-      newDims.y = Math.max(0, newDims.y)
-      newDims.width = Math.min(newDims.width, rect.width - newDims.x)
-      newDims.height = Math.min(newDims.height, rect.height - newDims.y)
+      // Constrain to actual displayed image bounds (not container bounds)
+      newDims.x = Math.max(imageBounds.x, Math.min(newDims.x, imageBounds.x + imageBounds.width))
+      newDims.y = Math.max(imageBounds.y, Math.min(newDims.y, imageBounds.y + imageBounds.height))
+      newDims.width = Math.min(newDims.width, imageBounds.x + imageBounds.width - newDims.x)
+      newDims.height = Math.min(newDims.height, imageBounds.y + imageBounds.height - newDims.y)
 
       setCropDims(newDims)
     },
-    [isDragging, dragStart, cropDims, selectedPreset, isCustom, customRatioWidth, customRatioHeight],
+    [isDragging, dragStart, cropDims, selectedPreset, isCustom, customRatioWidth, customRatioHeight, getDisplayedImageBounds],
   )
 
   const handleMouseUp = useCallback(() => {
@@ -417,29 +481,75 @@ export default function EditorCanvas({
   const handleApplyCropInternal = () => {
     if (!imageRef.current) return
 
-    const rect = imageRef.current.getBoundingClientRect()
-    const scaleX = imageState.width / rect.width
-    const scaleY = imageState.height / rect.height
+    // Always use original image for cropping
+    const originalImg = new Image()
+    originalImg.crossOrigin = "anonymous"
+    
+    originalImg.onload = () => {
+      // Get the displayed image element's bounding rect
+      const rect = imageRef.current!.getBoundingClientRect()
+      
+      // Calculate actual displayed image dimensions (accounting for object-contain)
+      // The image might be smaller than the container due to aspect ratio
+      const containerAspect = rect.width / rect.height
+      const imageAspect = originalImg.width / originalImg.height
+      
+      let displayedWidth: number
+      let displayedHeight: number
+      let offsetX = 0
+      let offsetY = 0
+      
+      if (imageAspect > containerAspect) {
+        // Image is wider - fit to width
+        displayedWidth = rect.width
+        displayedHeight = rect.width / imageAspect
+        offsetY = (rect.height - displayedHeight) / 2
+      } else {
+        // Image is taller - fit to height
+        displayedHeight = rect.height
+        displayedWidth = rect.height * imageAspect
+        offsetX = (rect.width - displayedWidth) / 2
+      }
+      
+      // Calculate scale factors from displayed size to original size
+      const scaleX = originalImg.width / displayedWidth
+      const scaleY = originalImg.height / displayedHeight
+      
+      // Adjust crop dimensions to account for image offset within container
+      const adjustedX = cropDims.x - offsetX
+      const adjustedY = cropDims.y - offsetY
+      
+      // Ensure crop is within actual image bounds
+      const clampedX = Math.max(0, Math.min(adjustedX, displayedWidth))
+      const clampedY = Math.max(0, Math.min(adjustedY, displayedHeight))
+      const clampedW = Math.max(0, Math.min(cropDims.width, displayedWidth - clampedX))
+      const clampedH = Math.max(0, Math.min(cropDims.height, displayedHeight - clampedY))
+      
+      // Convert to original image coordinates
+      const actualX = clampedX * scaleX
+      const actualY = clampedY * scaleY
+      const actualW = clampedW * scaleX
+      const actualH = clampedH * scaleY
+      
+      // Ensure we don't exceed original image bounds
+      const finalX = Math.max(0, Math.min(actualX, originalImg.width))
+      const finalY = Math.max(0, Math.min(actualY, originalImg.height))
+      const finalW = Math.max(0, Math.min(actualW, originalImg.width - finalX))
+      const finalH = Math.max(0, Math.min(actualH, originalImg.height - finalY))
 
-    const actualX = cropDims.x * scaleX
-    const actualY = cropDims.y * scaleY
-    const actualW = cropDims.width * scaleX
-    const actualH = cropDims.height * scaleY
+      const canvas = document.createElement("canvas")
+      canvas.width = finalW
+      canvas.height = finalH
+      const ctx = canvas.getContext("2d")
+      if (!ctx) return
 
-    const canvas = document.createElement("canvas")
-    canvas.width = actualW
-    canvas.height = actualH
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
-
-    const img = new Image()
-    img.crossOrigin = "anonymous"
-    img.onload = () => {
-      ctx.drawImage(img, actualX, actualY, actualW, actualH, 0, 0, actualW, actualH)
+      ctx.drawImage(originalImg, finalX, finalY, finalW, finalH, 0, 0, finalW, finalH)
       const croppedUrl = canvas.toDataURL("image/jpeg", 0.95)
-      onCropApply(croppedUrl, Math.round(actualW), Math.round(actualH))
+      onCropApply(croppedUrl, Math.round(finalW), Math.round(finalH))
     }
-    img.src = imageState.currentUrl
+    
+    // Always use originalUrl to ensure we crop from the original image
+    originalImg.src = imageState.originalUrl
   }
 
   // AI Edit handlers
@@ -608,10 +718,10 @@ export default function EditorCanvas({
               {/* Image card - stable container that never moves */}
               <div className="relative w-full overflow-hidden bg-muted/40">
                 <div className="relative w-full flex items-center justify-center overflow-hidden">
-                  {/* Original image */}
+                  {/* Image - use original when in crop mode, current otherwise */}
                   <img
                     ref={imageRef}
-                    src={imageState.currentUrl || "/placeholder.svg"}
+                    src={editorMode === "crop" ? imageState.originalUrl : imageState.currentUrl || "/placeholder.svg"}
                     alt="Editor canvas"
                     className="w-full h-auto object-contain relative z-0 block transition-[max-height] duration-200"
                     style={{ maxHeight: dynamicMaxHeight }}
@@ -628,7 +738,7 @@ export default function EditorCanvas({
                         }`}
                       >
                         <img
-                          src={imageState.currentUrl || "/placeholder.svg"}
+                          src={editorMode === "crop" ? imageState.originalUrl : imageState.currentUrl || "/placeholder.svg"}
                           alt="Blurred edges"
                           className="w-full h-full object-contain blur-lg"
                           style={{
@@ -646,7 +756,7 @@ export default function EditorCanvas({
                         }`}
                       >
                         <img
-                          src={imageState.currentUrl || "/placeholder.svg"}
+                          src={editorMode === "crop" ? imageState.originalUrl : imageState.currentUrl || "/placeholder.svg"}
                           alt="Blurred mid areas"
                           className="w-full h-full object-contain blur-md"
                           style={{
@@ -664,7 +774,7 @@ export default function EditorCanvas({
                         }`}
                       >
                         <img
-                          src={imageState.currentUrl || "/placeholder.svg"}
+                          src={editorMode === "crop" ? imageState.originalUrl : imageState.currentUrl || "/placeholder.svg"}
                           alt="Blurred center"
                           className="w-full h-full object-contain blur-sm"
                           style={{
@@ -808,8 +918,9 @@ export default function EditorCanvas({
       )}
 
       {/* Crop format tray – floating overlay anchored to the outer editor canvas wrapper
-          so it stays stable and visible even as the image size or aspect ratio changes. */}
-      {editorMode === "crop" && (
+          so it stays stable and visible even as the image size or aspect ratio changes.
+          Hide when user is dragging the crop bounding box. */}
+      {editorMode === "crop" && !isDragging && (
         <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center z-40 pb-4 translate-y-6">
           <div className="w-full max-w-3xl px-4 pointer-events-auto">
             <CropPresetTray
