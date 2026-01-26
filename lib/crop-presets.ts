@@ -10,26 +10,12 @@ export interface CropCategory {
   name: string
   label: string
   presets: CategoryPreset[]
+  description?: string
 }
 
 // Presets are ordered by height (tallest/portrait first, then landscape/shortest)
 // Lower ratio = taller box, higher ratio = shorter/wider box
 export const CROP_CATEGORIES: CropCategory[] = [
-  {
-    name: "media-bank",
-    label: "Media Bank",
-    presets: [
-      { name: "2:3", label: "Portrait", ratio: 2 / 3, displayRatio: "2:3" },
-      { name: "8:9", label: "Portrait", ratio: 8 / 9, displayRatio: "8:9" },
-      { name: "1:1", label: "Square", ratio: 1, displayRatio: "1:1" },
-      { name: "4:3", label: "Landscape", ratio: 4 / 3, displayRatio: "4:3" },
-      { name: "16:10", label: "Landscape", ratio: 16 / 10, displayRatio: "16:10" },
-      { name: "16:9", label: "Landscape", ratio: 16 / 9, displayRatio: "16:9" },
-      { name: "2:1", label: "Landscape", ratio: 2 / 1, displayRatio: "2:1" },
-      { name: "5:2", label: "Landscape", ratio: 5 / 2, displayRatio: "5:2" },
-      { name: "3:1", label: "Landscape", ratio: 3 / 1, displayRatio: "3:1" },
-    ],
-  },
   {
     name: "instagram",
     label: "Instagram",
@@ -84,5 +70,21 @@ export const CROP_CATEGORIES: CropCategory[] = [
     name: "custom",
     label: "Custom",
     presets: [],
+  },
+  {
+    name: "web-assets",
+    label: "Web Assets",
+    description: "Formats for AEM and Brand Portal components, mainly used by web editors.",
+    presets: [
+      { name: "2:3", label: "Portrait", ratio: 2 / 3, displayRatio: "2:3" },
+      { name: "8:9", label: "Portrait", ratio: 8 / 9, displayRatio: "8:9" },
+      { name: "1:1", label: "Square", ratio: 1, displayRatio: "1:1" },
+      { name: "4:3", label: "Landscape", ratio: 4 / 3, displayRatio: "4:3" },
+      { name: "16:10", label: "Landscape", ratio: 16 / 10, displayRatio: "16:10" },
+      { name: "16:9", label: "Landscape", ratio: 16 / 9, displayRatio: "16:9" },
+      { name: "2:1", label: "Landscape", ratio: 2 / 1, displayRatio: "2:1" },
+      { name: "5:2", label: "Landscape", ratio: 5 / 2, displayRatio: "5:2" },
+      { name: "3:1", label: "Landscape", ratio: 3 / 1, displayRatio: "3:1" },
+    ],
   },
 ]

@@ -92,12 +92,19 @@ const CropPresetTray: React.FC<CropPresetTrayProps> = ({
       {selectedCategory === "custom" ? (
         <div className="text-sm font-medium mb-4">Custom resolution:</div>
       ) : (
-        <div className="text-sm font-medium mb-4">
-          {currentCategoryLabel} format:
-          {displayPreset && (
-            <span className="text-[#6764F6] font-medium ml-1">
-              {displayPreset.label} ({displayPreset.displayRatio})
-            </span>
+        <div className="mb-4">
+          <div className="text-sm font-medium">
+            {currentCategoryLabel} format:
+            {displayPreset && (
+              <span className="text-[#6764F6] font-medium ml-1">
+                {displayPreset.label} ({displayPreset.displayRatio})
+              </span>
+            )}
+          </div>
+          {currentCategory.description && (
+            <div className="text-xs text-muted-foreground mt-2">
+              {currentCategory.description}
+            </div>
           )}
         </div>
       )}
