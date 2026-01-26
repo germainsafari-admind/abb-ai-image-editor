@@ -389,3 +389,32 @@
   animation: blur-progressive 1s ease-out forwards;
   will-change: clip-path;
 }
+
+/* Blur ridge animation - moves left to right with blur */
+@keyframes blur-ridge {
+  0% {
+    clip-path: inset(0 100% 0 0);
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+.blur-ridge-animation {
+  animation: blur-ridge 1s ease-out forwards;
+  will-change: clip-path;
+}
+
+.blur-ridge-animation .blur-ridge-gradient {
+  animation: blur-ridge-move 1s ease-out forwards;
+  will-change: left;
+}
+
+@keyframes blur-ridge-move {
+  0% {
+    left: 0%;
+  }
+  100% {
+    left: 100%;
+  }
+}

@@ -981,6 +981,46 @@ export default function EditorCanvas({
                           crossOrigin="anonymous"
                         />
                       </div>
+
+                      {/* Soft vertical ABB Lilac transition ridge at blur boundary */}
+                      <div
+                        className={`absolute top-0 left-0 w-full h-full pointer-events-none ${
+                          isBlurAnimating ? "blur-ridge-animation" : ""
+                        }`}
+                        style={{
+                          zIndex: 11,
+                        }}
+                      >
+                        <div
+                          className="blur-ridge-gradient"
+                          style={{
+                            width: '64px',
+                            height: '100%',
+                            background: `linear-gradient(to right, 
+                              rgba(248, 245, 255, 0) 0px,
+                              rgba(248, 245, 255, 0.15) 12px,
+                              rgba(248, 245, 255, 0.30) 18px,
+                              rgba(248, 245, 255, 0.50) 22px,
+                              rgba(248, 245, 255, 0.65) 26px,
+                              rgba(248, 245, 255, 0.75) 29px,
+                              rgba(248, 245, 255, 0.82) 31px,
+                              rgba(248, 245, 255, 0.88) 32px,
+                              rgba(248, 245, 255, 0.82) 33px,
+                              rgba(248, 245, 255, 0.75) 35px,
+                              rgba(248, 245, 255, 0.65) 38px,
+                              rgba(248, 245, 255, 0.50) 42px,
+                              rgba(248, 245, 255, 0.30) 46px,
+                              rgba(248, 245, 255, 0.15) 52px,
+                              rgba(248, 245, 255, 0) 64px
+                            )`,
+                            mixBlendMode: 'screen',
+                            filter: 'blur(0.5px)',
+                            position: 'absolute',
+                            left: isBlurAnimating ? '0%' : '100%',
+                            transform: 'translateX(-50%)',
+                          }}
+                        />
+                      </div>
                     </>
                   )}
                 </div>
