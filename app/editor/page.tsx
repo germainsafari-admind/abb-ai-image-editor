@@ -1,12 +1,17 @@
 "use client"
 
-import { useState, useCallback, useEffect } from "react"
+import { useState, useCallback, useEffect, useRef } from "react"
 import { useSearchParams } from "next/navigation"
 import { ChevronLeft } from "lucide-react"
 import Header from "@/components/header"
 import EditorCanvas, { CropHeaderInfo } from "@/components/editor/editor-canvas"
 import ControlsRow from "@/components/editor/controls-row"
 import type { ImageState, EditHistoryItem, EditorMode } from "@/types/editor"
+
+// Notification types
+type NotificationType = "color-correction" | "blur" | null
+
+const NOTIFICATION_AUTO_DISMISS_MS = 6000
 
 export default function EditorPage() {
   const searchParams = useSearchParams()
@@ -16,24 +21,63 @@ export default function EditorPage() {
   const [imageState, setImageState] = useState<ImageState | null>(null)
   const [editHistory, setEditHistory] = useState<EditHistoryItem[]>([])
   const [historyIndex, setHistoryIndex] = useState(-1)
-  const [showBlurNotification, setShowBlurNotification] = useState(false)
-  const [showColorCorrectionBanner, setShowColorCorrectionBanner] = useState(false)
+  
+  // Single notification state - only one notification visible at a time
+  const [activeNotification, setActiveNotification] = useState<NotificationType>(null)
+  const notificationTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Helper to show a notification (replaces any existing one)
+  const showNotification = useCallback((type: NotificationType) => {
+    // Clear any existing timeout
+    if (notificationTimeoutRef.current) {
+      clearTimeout(notificationTimeoutRef.current)
+      notificationTimeoutRef.current = null
+    }
+    
+    // Set the new notification
+    setActiveNotification(type)
+    
+    // Set auto-dismiss timeout
+    if (type !== null) {
+      notificationTimeoutRef.current = setTimeout(() => {
+        setActiveNotification(null)
+        notificationTimeoutRef.current = null
+      }, NOTIFICATION_AUTO_DISMISS_MS)
+    }
+  }, [])
+
+  const dismissNotification = useCallback(() => {
+    if (notificationTimeoutRef.current) {
+      clearTimeout(notificationTimeoutRef.current)
+      notificationTimeoutRef.current = null
+    }
+    setActiveNotification(null)
+  }, [])
 
   const [editorMode, setEditorMode] = useState<EditorMode>("view")
   const [aiEditResult, setAiEditResult] = useState<{ beforeUrl: string; afterUrl: string } | null>(null)
   const [hasCropPresetSelected, setHasCropPresetSelected] = useState(false)
   const [cropHeaderInfo, setCropHeaderInfo] = useState<CropHeaderInfo>({ isActive: false })
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (notificationTimeoutRef.current) {
+        clearTimeout(notificationTimeoutRef.current)
+      }
+    }
+  }, [])
+
   // Check for color correction banner flag
   useEffect(() => {
     if (typeof window !== "undefined") {
       const showBanner = window.localStorage.getItem("showColorCorrectionBanner")
       if (showBanner === "true") {
-        setShowColorCorrectionBanner(true)
+        showNotification("color-correction")
         window.localStorage.removeItem("showColorCorrectionBanner")
       }
     }
-  }, [])
+  }, [showNotification])
 
   // Resolve image URL either from query param or from localStorage
   useEffect(() => {
@@ -119,10 +163,9 @@ export default function EditorPage() {
     const newState = { ...imageState, isBlurred: !imageState.isBlurred }
     addToHistory(newState)
     if (!imageState.isBlurred) {
-      setShowBlurNotification(true)
-      setTimeout(() => setShowBlurNotification(false), 4000)
+      showNotification("blur")
     }
-  }, [imageState, addToHistory, editorMode])
+  }, [imageState, addToHistory, editorMode, showNotification])
 
   const handleCropApply = useCallback(
     (croppedImageUrl: string, newWidth: number, newHeight: number) => {
@@ -169,7 +212,7 @@ export default function EditorPage() {
     }
   }, [imageState, addToHistory])
 
-  const hasAnyBanner = showColorCorrectionBanner || showBlurNotification
+  const hasAnyBanner = activeNotification !== null
 
   if (!imageState) {
     return (
@@ -189,43 +232,37 @@ export default function EditorPage() {
       <div className="flex-shrink-0 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto">
           <div className="mt-2 mb-2 min-h-[56px] flex flex-col gap-2">
-            {showColorCorrectionBanner && (
-              <div className="bg-[#EBF1FF] rounded-xl px-4 py-3 flex items-center gap-3 shadow-sm animate-slide-down">
+            {/* Single notification banner - only one visible at a time */}
+            {activeNotification !== null && (
+              <div 
+                className="bg-[#EBF1FF] flex items-center shadow-sm animate-slide-down"
+                style={{
+                  borderRadius: '8px',
+                  padding: '16px 24px',
+                  height: '58px',
+                  gap: '16px',
+                }}
+              >
+                {/* Info icon - 16x16 */}
                 <div className="flex-shrink-0">
-                  <svg className="w-5 h-5" fill="#0F0F0F" viewBox="0 0 16 16">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="#0F0F0F">
                     <path d="M8 0C3.58172 0 0 3.58172 0 8C0 12.4183 3.58172 16 8 16C12.4183 16 16 12.4183 16 8C16 3.58172 12.4183 0 8 0ZM8.99976 8V12C8.99976 12.5523 8.55204 13 7.99976 13C7.44747 13 6.99976 12.5523 6.99976 12V8C6.99976 7.44772 7.44747 7 7.99976 7C8.55204 7 8.99976 7.44772 8.99976 8ZM9.25037 4.25195C9.25037 4.94231 8.69072 5.50195 8.00037 5.50195C7.31001 5.50195 6.75037 4.94231 6.75037 4.25195C6.75037 3.5616 7.31001 3.00195 8.00037 3.00195C8.69072 3.00195 9.25037 3.5616 9.25037 4.25195Z" />
                   </svg>
                 </div>
                 <p className="text-sm text-gray-700 flex-1">
-                  Your image has been automatically color corrected.
+                  {activeNotification === "color-correction" 
+                    ? "Your image has been automatically color corrected."
+                    : "Your image has been automatically blurred."}
                 </p>
+                {/* Close button - 16x16 icon */}
                 <button
-                  onClick={() => setShowColorCorrectionBanner(false)}
-                  className="flex-shrink-0 text-gray-500 hover:text-gray-700 transition-colors p-1"
+                  onClick={dismissNotification}
+                  className="flex-shrink-0 text-gray-500 hover:text-gray-700 transition-colors"
+                  style={{ padding: '0' }}
+                  aria-label="Dismiss notification"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            )}
-
-            {showBlurNotification && (
-              <div className="bg-[#EBF1FF] rounded-xl px-4 py-3 flex items-center gap-3 shadow-sm animate-slide-down">
-                <div className="flex-shrink-0">
-                  <svg className="w-5 h-5" fill="#0F0F0F" viewBox="0 0 16 16">
-                    <path d="M8 0C3.58172 0 0 3.58172 0 8C0 12.4183 3.58172 16 8 16C12.4183 16 16 12.4183 16 8C16 3.58172 12.4183 0 8 0ZM8.99976 8V12C8.99976 12.5523 8.55204 13 7.99976 13C7.44747 13 6.99976 12.5523 6.99976 12V8C6.99976 7.44772 7.44747 7 7.99976 7C8.55204 7 8.99976 7.44772 8.99976 8ZM9.25037 4.25195C9.25037 4.94231 8.69072 5.50195 8.00037 5.50195C7.31001 5.50195 6.75037 4.94231 6.75037 4.25195C6.75037 3.5616 7.31001 3.00195 8.00037 3.00195C8.69072 3.00195 9.25037 3.5616 9.25037 4.25195Z" />
-                  </svg>
-                </div>
-                <p className="text-sm text-gray-700 flex-1">
-                  Your image has been automatically blurred.
-                </p>
-                <button
-                  onClick={() => setShowBlurNotification(false)}
-                  className="flex-shrink-0 text-gray-500 hover:text-gray-700 transition-colors p-1"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 4L12 12M4 12L12 4" />
                   </svg>
                 </button>
               </div>

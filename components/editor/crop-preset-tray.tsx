@@ -117,7 +117,7 @@ const CropPresetTray: React.FC<CropPresetTrayProps> = ({
             <input
               type="number"
               min={1}
-              placeholder="Image width"
+              placeholder="Width"
               value={customRatioWidth}
               onChange={(e) => onChangeCustomWidth(e.target.value)}
               className="w-28 px-3 py-2 rounded-lg border border-border text-sm focus:outline-none focus:ring-2 focus:ring-[#6764F6]"
@@ -126,7 +126,7 @@ const CropPresetTray: React.FC<CropPresetTrayProps> = ({
             <input
               type="number"
               min={1}
-              placeholder="Image height"
+              placeholder="Height"
               value={customRatioHeight}
               onChange={(e) => onChangeCustomHeight(e.target.value)}
               className="w-28 px-3 py-2 rounded-lg border border-border text-sm focus:outline-none focus:ring-2 focus:ring-[#6764F6]"

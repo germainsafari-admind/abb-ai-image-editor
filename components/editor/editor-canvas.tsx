@@ -158,25 +158,29 @@ export default function EditorCanvas({
     return 16 / 9
   }, [isCustom, selectedPreset, customRatioWidth, customRatioHeight, imageState.width, imageState.height])
 
+
   const recenterCropForRatio = useCallback((ratio: number) => {
     if (!imageRef.current) return
 
     const imageBounds = getDisplayedImageBounds()
 
-    let cropW = imageBounds.width * 0.6
-    let cropH = cropW / ratio
-
-    if (cropH > imageBounds.height * 0.8) {
-      cropH = imageBounds.height * 0.8
-      cropW = cropH * ratio
+    // Calculate maximum crop size that fits within image with the exact aspect ratio
+    let maxCropW = imageBounds.width
+    let maxCropH = maxCropW / ratio
+    if (maxCropH > imageBounds.height) {
+      maxCropH = imageBounds.height
+      maxCropW = maxCropH * ratio
     }
 
-    setCropDims({
-      x: imageBounds.x + (imageBounds.width - cropW) / 2,
-      y: imageBounds.y + (imageBounds.height - cropH) / 2,
-      width: cropW,
-      height: cropH,
-    })
+    // Start at 80% of max size, centered
+    let cropW = maxCropW * 0.8
+    let cropH = cropW / ratio
+
+    // Center the crop box
+    const cropX = imageBounds.x + (imageBounds.width - cropW) / 2
+    const cropY = imageBounds.y + (imageBounds.height - cropH) / 2
+
+    setCropDims({ x: cropX, y: cropY, width: cropW, height: cropH })
     setCropInitialized(true)
   }, [getDisplayedImageBounds])
 
@@ -341,125 +345,318 @@ export default function EditorCanvas({
       const deltaY = e.clientY - dragStart.y
       const minSize = 50
 
-      const newDims = { ...cropDims }
-      
-      // Determine if we should lock aspect ratio
-      let currentRatio: number | undefined
+      // Image boundary limits
+      const imgLeft = imageBounds.x
+      const imgRight = imageBounds.x + imageBounds.width
+      const imgTop = imageBounds.y
+      const imgBottom = imageBounds.y + imageBounds.height
+
+      // Get the locked aspect ratio (MUST be locked when preset/custom is selected)
+      let lockedAspectRatio: number | null = null
       if (!isCustom && selectedPreset?.ratio) {
-        currentRatio = selectedPreset.ratio
+        lockedAspectRatio = selectedPreset.ratio
       } else if (isCustom && customRatioWidth && customRatioHeight) {
         const w = parseFloat(customRatioWidth)
         const h = parseFloat(customRatioHeight)
         if (!Number.isNaN(w) && !Number.isNaN(h) && w > 0 && h > 0) {
-          currentRatio = w / h
+          lockedAspectRatio = w / h
         }
       }
+
+      let newX = dragStart.cropX
+      let newY = dragStart.cropY
+      let newW = dragStart.cropW
+      let newH = dragStart.cropH
 
       if (isDragging === "move") {
-        newDims.x = Math.max(imageBounds.x, Math.min(imageBounds.x + imageBounds.width - dragStart.cropW, dragStart.cropX + deltaX))
-        newDims.y = Math.max(imageBounds.y, Math.min(imageBounds.y + imageBounds.height - dragStart.cropH, dragStart.cropY + deltaY))
-      } else if (isDragging === "nw") {
-        if (currentRatio) {
-          const newW = Math.max(minSize, dragStart.cropW - deltaX)
-          const newH = newW / currentRatio
-          newDims.x = dragStart.cropX + (dragStart.cropW - newW)
-          newDims.y = dragStart.cropY + (dragStart.cropH - newH)
-          newDims.width = newW
-          newDims.height = newH
-        } else {
-          const newW = Math.max(minSize, dragStart.cropW - deltaX)
-          const newH = Math.max(minSize, dragStart.cropH - deltaY)
-          newDims.x = dragStart.cropX + (dragStart.cropW - newW)
-          newDims.y = dragStart.cropY + (dragStart.cropH - newH)
-          newDims.width = newW
-          newDims.height = newH
+        // Move the crop box - clamp position to keep fully within bounds
+        newX = dragStart.cropX + deltaX
+        newY = dragStart.cropY + deltaY
+        
+        // Clamp to image bounds
+        newX = Math.max(imgLeft, Math.min(newX, imgRight - newW))
+        newY = Math.max(imgTop, Math.min(newY, imgBottom - newH))
+      } else {
+        // For resize operations, calculate limits FIRST, then apply resize within those limits
+        // This prevents the crop box from "trying" to grow beyond bounds
+        
+        // Calculate the anchor point (the edge/corner that stays fixed)
+        const anchorRight = dragStart.cropX + dragStart.cropW
+        const anchorBottom = dragStart.cropY + dragStart.cropH
+        const anchorLeft = dragStart.cropX
+        const anchorTop = dragStart.cropY
+
+        if (isDragging === "se") {
+          // Southeast corner - top-left is anchor, bottom-right moves
+          // Max size is limited by distance from anchor to image edges
+          const maxW = imgRight - anchorLeft
+          const maxH = imgBottom - anchorTop
+          
+          // Calculate desired size
+          let desiredW = dragStart.cropW + deltaX
+          let desiredH = dragStart.cropH + deltaY
+          
+          if (lockedAspectRatio !== null) {
+            // Use the more significant movement direction
+            const scaleX = desiredW / dragStart.cropW
+            const scaleY = desiredH / dragStart.cropH
+            const scale = Math.abs(scaleX - 1) > Math.abs(scaleY - 1) ? scaleX : scaleY
+            desiredW = dragStart.cropW * scale
+            desiredH = desiredW / lockedAspectRatio
+            
+            // Clamp to max while maintaining aspect ratio
+            if (desiredW > maxW) {
+              desiredW = maxW
+              desiredH = desiredW / lockedAspectRatio
+            }
+            if (desiredH > maxH) {
+              desiredH = maxH
+              desiredW = desiredH * lockedAspectRatio
+            }
+          } else {
+            desiredW = Math.min(desiredW, maxW)
+            desiredH = Math.min(desiredH, maxH)
+          }
+          
+          newW = Math.max(minSize, desiredW)
+          newH = lockedAspectRatio ? newW / lockedAspectRatio : Math.max(minSize, desiredH)
+          newX = anchorLeft
+          newY = anchorTop
+          
+        } else if (isDragging === "sw") {
+          // Southwest corner - top-right is anchor, bottom-left moves
+          const maxW = anchorRight - imgLeft
+          const maxH = imgBottom - anchorTop
+          
+          let desiredW = dragStart.cropW - deltaX
+          let desiredH = dragStart.cropH + deltaY
+          
+          if (lockedAspectRatio !== null) {
+            const scaleX = desiredW / dragStart.cropW
+            const scaleY = desiredH / dragStart.cropH
+            const scale = Math.abs(scaleX - 1) > Math.abs(scaleY - 1) ? scaleX : scaleY
+            desiredW = dragStart.cropW * scale
+            desiredH = desiredW / lockedAspectRatio
+            
+            if (desiredW > maxW) {
+              desiredW = maxW
+              desiredH = desiredW / lockedAspectRatio
+            }
+            if (desiredH > maxH) {
+              desiredH = maxH
+              desiredW = desiredH * lockedAspectRatio
+            }
+          } else {
+            desiredW = Math.min(desiredW, maxW)
+            desiredH = Math.min(desiredH, maxH)
+          }
+          
+          newW = Math.max(minSize, desiredW)
+          newH = lockedAspectRatio ? newW / lockedAspectRatio : Math.max(minSize, desiredH)
+          newX = anchorRight - newW
+          newY = anchorTop
+          
+        } else if (isDragging === "ne") {
+          // Northeast corner - bottom-left is anchor, top-right moves
+          const maxW = imgRight - anchorLeft
+          const maxH = anchorBottom - imgTop
+          
+          let desiredW = dragStart.cropW + deltaX
+          let desiredH = dragStart.cropH - deltaY
+          
+          if (lockedAspectRatio !== null) {
+            const scaleX = desiredW / dragStart.cropW
+            const scaleY = desiredH / dragStart.cropH
+            const scale = Math.abs(scaleX - 1) > Math.abs(scaleY - 1) ? scaleX : scaleY
+            desiredW = dragStart.cropW * scale
+            desiredH = desiredW / lockedAspectRatio
+            
+            if (desiredW > maxW) {
+              desiredW = maxW
+              desiredH = desiredW / lockedAspectRatio
+            }
+            if (desiredH > maxH) {
+              desiredH = maxH
+              desiredW = desiredH * lockedAspectRatio
+            }
+          } else {
+            desiredW = Math.min(desiredW, maxW)
+            desiredH = Math.min(desiredH, maxH)
+          }
+          
+          newW = Math.max(minSize, desiredW)
+          newH = lockedAspectRatio ? newW / lockedAspectRatio : Math.max(minSize, desiredH)
+          newX = anchorLeft
+          newY = anchorBottom - newH
+          
+        } else if (isDragging === "nw") {
+          // Northwest corner - bottom-right is anchor, top-left moves
+          const maxW = anchorRight - imgLeft
+          const maxH = anchorBottom - imgTop
+          
+          let desiredW = dragStart.cropW - deltaX
+          let desiredH = dragStart.cropH - deltaY
+          
+          if (lockedAspectRatio !== null) {
+            const scaleX = desiredW / dragStart.cropW
+            const scaleY = desiredH / dragStart.cropH
+            const scale = Math.abs(scaleX - 1) > Math.abs(scaleY - 1) ? scaleX : scaleY
+            desiredW = dragStart.cropW * scale
+            desiredH = desiredW / lockedAspectRatio
+            
+            if (desiredW > maxW) {
+              desiredW = maxW
+              desiredH = desiredW / lockedAspectRatio
+            }
+            if (desiredH > maxH) {
+              desiredH = maxH
+              desiredW = desiredH * lockedAspectRatio
+            }
+          } else {
+            desiredW = Math.min(desiredW, maxW)
+            desiredH = Math.min(desiredH, maxH)
+          }
+          
+          newW = Math.max(minSize, desiredW)
+          newH = lockedAspectRatio ? newW / lockedAspectRatio : Math.max(minSize, desiredH)
+          newX = anchorRight - newW
+          newY = anchorBottom - newH
+          
+        } else if (isDragging === "e") {
+          // East edge - left edge is anchor, right edge moves
+          const maxW = imgRight - anchorLeft
+          let desiredW = dragStart.cropW + deltaX
+          
+          if (lockedAspectRatio !== null) {
+            // When aspect ratio is locked, height changes too (centered vertically)
+            const maxH = Math.min(anchorTop - imgTop + dragStart.cropH / 2, imgBottom - anchorTop - dragStart.cropH / 2) * 2 + dragStart.cropH
+            desiredW = Math.min(desiredW, maxW)
+            let desiredH = desiredW / lockedAspectRatio
+            
+            // Also limit by available vertical space
+            const centerY = anchorTop + dragStart.cropH / 2
+            const maxHByTop = (centerY - imgTop) * 2
+            const maxHByBottom = (imgBottom - centerY) * 2
+            const actualMaxH = Math.min(maxHByTop, maxHByBottom)
+            
+            if (desiredH > actualMaxH) {
+              desiredH = actualMaxH
+              desiredW = desiredH * lockedAspectRatio
+            }
+            
+            newW = Math.max(minSize, desiredW)
+            newH = newW / lockedAspectRatio
+            newX = anchorLeft
+            newY = centerY - newH / 2
+          } else {
+            newW = Math.max(minSize, Math.min(desiredW, maxW))
+            newX = anchorLeft
+          }
+          
+        } else if (isDragging === "w") {
+          // West edge - right edge is anchor, left edge moves
+          const maxW = anchorRight - imgLeft
+          let desiredW = dragStart.cropW - deltaX
+          
+          if (lockedAspectRatio !== null) {
+            desiredW = Math.min(desiredW, maxW)
+            let desiredH = desiredW / lockedAspectRatio
+            
+            const centerY = anchorTop + dragStart.cropH / 2
+            const maxHByTop = (centerY - imgTop) * 2
+            const maxHByBottom = (imgBottom - centerY) * 2
+            const actualMaxH = Math.min(maxHByTop, maxHByBottom)
+            
+            if (desiredH > actualMaxH) {
+              desiredH = actualMaxH
+              desiredW = desiredH * lockedAspectRatio
+            }
+            
+            newW = Math.max(minSize, desiredW)
+            newH = newW / lockedAspectRatio
+            newX = anchorRight - newW
+            newY = centerY - newH / 2
+          } else {
+            newW = Math.max(minSize, Math.min(desiredW, maxW))
+            newX = anchorRight - newW
+          }
+          
+        } else if (isDragging === "s") {
+          // South edge - top edge is anchor, bottom edge moves
+          const maxH = imgBottom - anchorTop
+          let desiredH = dragStart.cropH + deltaY
+          
+          if (lockedAspectRatio !== null) {
+            desiredH = Math.min(desiredH, maxH)
+            let desiredW = desiredH * lockedAspectRatio
+            
+            const centerX = anchorLeft + dragStart.cropW / 2
+            const maxWByLeft = (centerX - imgLeft) * 2
+            const maxWByRight = (imgRight - centerX) * 2
+            const actualMaxW = Math.min(maxWByLeft, maxWByRight)
+            
+            if (desiredW > actualMaxW) {
+              desiredW = actualMaxW
+              desiredH = desiredW / lockedAspectRatio
+            }
+            
+            newH = Math.max(minSize, desiredH)
+            newW = newH * lockedAspectRatio
+            newX = centerX - newW / 2
+            newY = anchorTop
+          } else {
+            newH = Math.max(minSize, Math.min(desiredH, maxH))
+            newY = anchorTop
+          }
+          
+        } else if (isDragging === "n") {
+          // North edge - bottom edge is anchor, top edge moves
+          const maxH = anchorBottom - imgTop
+          let desiredH = dragStart.cropH - deltaY
+          
+          if (lockedAspectRatio !== null) {
+            desiredH = Math.min(desiredH, maxH)
+            let desiredW = desiredH * lockedAspectRatio
+            
+            const centerX = anchorLeft + dragStart.cropW / 2
+            const maxWByLeft = (centerX - imgLeft) * 2
+            const maxWByRight = (imgRight - centerX) * 2
+            const actualMaxW = Math.min(maxWByLeft, maxWByRight)
+            
+            if (desiredW > actualMaxW) {
+              desiredW = actualMaxW
+              desiredH = desiredW / lockedAspectRatio
+            }
+            
+            newH = Math.max(minSize, desiredH)
+            newW = newH * lockedAspectRatio
+            newX = centerX - newW / 2
+            newY = anchorBottom - newH
+          } else {
+            newH = Math.max(minSize, Math.min(desiredH, maxH))
+            newY = anchorBottom - newH
+          }
         }
-      } else if (isDragging === "ne") {
-        if (currentRatio) {
-          newDims.width = Math.max(minSize, dragStart.cropW + deltaX)
-          const newH = newDims.width / currentRatio
-          newDims.y = dragStart.cropY + (dragStart.cropH - newH)
-          newDims.height = newH
-        } else {
-          newDims.width = Math.max(minSize, dragStart.cropW + deltaX)
-          const newH = Math.max(minSize, dragStart.cropH - deltaY)
-          newDims.y = dragStart.cropY + (dragStart.cropH - newH)
-          newDims.height = newH
+        
+        // Final safety clamp - ensure crop box is fully within image bounds
+        // This catches any edge cases
+        newX = Math.max(imgLeft, Math.min(newX, imgRight - newW))
+        newY = Math.max(imgTop, Math.min(newY, imgBottom - newH))
+        
+        // If width/height exceed bounds after position clamp, shrink while maintaining aspect ratio
+        if (newX + newW > imgRight) {
+          newW = imgRight - newX
+          if (lockedAspectRatio) newH = newW / lockedAspectRatio
         }
-      } else if (isDragging === "sw") {
-        if (currentRatio) {
-          const newW = Math.max(minSize, dragStart.cropW - deltaX)
-          newDims.x = dragStart.cropX + (dragStart.cropW - newW)
-          newDims.width = newW
-          newDims.height = newW / currentRatio
-        } else {
-          const newW = Math.max(minSize, dragStart.cropW - deltaX)
-          newDims.x = dragStart.cropX + (dragStart.cropW - newW)
-          newDims.width = newW
-          newDims.height = Math.max(minSize, dragStart.cropH + deltaY)
-        }
-      } else if (isDragging === "se") {
-        if (currentRatio) {
-          newDims.width = Math.max(minSize, dragStart.cropW + deltaX)
-          newDims.height = newDims.width / currentRatio
-        } else {
-          newDims.width = Math.max(minSize, dragStart.cropW + deltaX)
-          newDims.height = Math.max(minSize, dragStart.cropH + deltaY)
-        }
-      } else if (isDragging === "n") {
-        if (currentRatio) {
-          const newH = Math.max(minSize, dragStart.cropH - deltaY)
-          const newW = newH * currentRatio
-          newDims.x = dragStart.cropX + (dragStart.cropW - newW) / 2
-          newDims.y = dragStart.cropY + (dragStart.cropH - newH)
-          newDims.width = newW
-          newDims.height = newH
-        } else {
-          const newH = Math.max(minSize, dragStart.cropH - deltaY)
-          newDims.y = dragStart.cropY + (dragStart.cropH - newH)
-          newDims.height = newH
-        }
-      } else if (isDragging === "s") {
-        if (currentRatio) {
-          const newH = Math.max(minSize, dragStart.cropH + deltaY)
-          const newW = newH * currentRatio
-          newDims.x = dragStart.cropX + (dragStart.cropW - newW) / 2
-          newDims.width = newW
-          newDims.height = newH
-        } else {
-          newDims.height = Math.max(minSize, dragStart.cropH + deltaY)
-        }
-      } else if (isDragging === "e") {
-        if (currentRatio) {
-          newDims.width = Math.max(minSize, dragStart.cropW + deltaX)
-          newDims.height = newDims.width / currentRatio
-        } else {
-          newDims.width = Math.max(minSize, dragStart.cropW + deltaX)
-        }
-      } else if (isDragging === "w") {
-        if (currentRatio) {
-          const newW = Math.max(minSize, dragStart.cropW - deltaX)
-          const newH = newW / currentRatio
-          newDims.x = dragStart.cropX + (dragStart.cropW - newW)
-          newDims.y = dragStart.cropY + (dragStart.cropH - newH) / 2
-          newDims.width = newW
-          newDims.height = newH
-        } else {
-          const newW = Math.max(minSize, dragStart.cropW - deltaX)
-          newDims.x = dragStart.cropX + (dragStart.cropW - newW)
-          newDims.width = newW
+        if (newY + newH > imgBottom) {
+          newH = imgBottom - newY
+          if (lockedAspectRatio) newW = newH * lockedAspectRatio
         }
       }
 
-      // Constrain to actual displayed image bounds (not container bounds)
-      newDims.x = Math.max(imageBounds.x, Math.min(newDims.x, imageBounds.x + imageBounds.width))
-      newDims.y = Math.max(imageBounds.y, Math.min(newDims.y, imageBounds.y + imageBounds.height))
-      newDims.width = Math.min(newDims.width, imageBounds.x + imageBounds.width - newDims.x)
-      newDims.height = Math.min(newDims.height, imageBounds.y + imageBounds.height - newDims.y)
-
-      setCropDims(newDims)
+      setCropDims({ x: newX, y: newY, width: newW, height: newH })
     },
-    [isDragging, dragStart, cropDims, selectedPreset, isCustom, customRatioWidth, customRatioHeight, getDisplayedImageBounds],
+    [isDragging, dragStart, selectedPreset, isCustom, customRatioWidth, customRatioHeight, getDisplayedImageBounds],
   )
 
   const handleMouseUp = useCallback(() => {
