@@ -229,13 +229,16 @@ export default function EditorCanvas({
   useEffect(() => {
     if (!onCropHeaderChange) return
 
-    // Header should only be active while in crop mode AND after a category
-    // has been explicitly selected by the user. This prevents showing
-    // "Media Bank format:" before the user makes a choice.
-    if (editorMode !== "crop" || !selectedCategory) {
+    // Header should only be active while in crop mode AND while a preset
+    // (or custom ratio) is actively selected. This matches the requirement
+    // that category labels are only visible during active crop preset use.
+    const hasActivePresetOrCustom = !!selectedPreset || isCustom
+    if (editorMode !== "crop" || !selectedCategory || !hasActivePresetOrCustom) {
       onCropHeaderChange({ isActive: false })
       return
     }
+
+    const hasDisplayedDims = displayedDims.width > 0 && displayedDims.height > 0
 
     onCropHeaderChange({
       isActive: true,
@@ -245,15 +248,15 @@ export default function EditorCanvas({
       selectedPresetDisplayRatio: selectedPreset?.displayRatio,
       customRatioWidth,
       customRatioHeight,
-      widthPx: displayedDims.width,
-      heightPx: displayedDims.height,
+      widthPx: hasDisplayedDims ? displayedDims.width : undefined,
+      heightPx: hasDisplayedDims ? displayedDims.height : undefined,
     })
   }, [
     editorMode,
     isCustom,
     selectedCategory,
-    currentCategory.label,
     selectedPreset,
+    currentCategory.label,
     customRatioWidth,
     customRatioHeight,
     displayedDims.width,

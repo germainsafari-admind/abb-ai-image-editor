@@ -216,6 +216,20 @@ export default function EditorPage() {
 
   const hasAnyBanner = activeNotification !== null
 
+  const hasActiveCropHeader = editorMode === "crop" && cropHeaderInfo.isActive
+
+  // Determine which pixel dimensions to display:
+  // - While actively cropping with a preset/custom ratio, show the live crop box pixels
+  // - Otherwise, show the current image dimensions
+  const pixelWidth =
+    hasActiveCropHeader && cropHeaderInfo.widthPx && cropHeaderInfo.heightPx
+      ? cropHeaderInfo.widthPx
+      : imageState.width
+  const pixelHeight =
+    hasActiveCropHeader && cropHeaderInfo.widthPx && cropHeaderInfo.heightPx
+      ? cropHeaderInfo.heightPx
+      : imageState.height
+
   if (!imageState) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -270,47 +284,45 @@ export default function EditorPage() {
               </div>
             )}
 
-            {/* Crop mode header lives in the same vertical slot as banners when no banner is visible */}
-            {!hasAnyBanner && editorMode === "crop" && cropHeaderInfo.isActive && (
+            {/* Header row for crop context + pixel size.
+                This row is always rendered when no banner is visible so that
+                the pixel size is consistently visible across editor states. */}
+            {!hasAnyBanner && (
               <div className="bg-background rounded-xl px-0 sm:px-2 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => handleModeChange("view")}
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                    aria-label="Back"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-                  <span className="text-sm font-medium">
-                    {cropHeaderInfo.isCustom
-                      ? "Custom resolution:"
-                      : `${cropHeaderInfo.categoryLabel ?? ""} format:`}
-                    {cropHeaderInfo.selectedPresetLabel && cropHeaderInfo.selectedPresetDisplayRatio && (
-                      <span className="text-[#6764F6] font-medium ml-1">
-                        {cropHeaderInfo.selectedPresetLabel} ({cropHeaderInfo.selectedPresetDisplayRatio})
+                <div className="flex items-center gap-3 min-h-[24px]">
+                  {hasActiveCropHeader && (
+                    <>
+                      <button
+                        onClick={() => handleModeChange("view")}
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                        aria-label="Back"
+                      >
+                        <ChevronLeft className="w-5 h-5" />
+                      </button>
+                      <span className="text-sm font-medium">
+                        {cropHeaderInfo.isCustom
+                          ? "Custom resolution:"
+                          : `${cropHeaderInfo.categoryLabel ?? ""} format:`}
+                        {cropHeaderInfo.selectedPresetLabel && cropHeaderInfo.selectedPresetDisplayRatio && (
+                          <span className="text-[#6764F6] font-medium ml-1">
+                            {cropHeaderInfo.selectedPresetLabel} ({cropHeaderInfo.selectedPresetDisplayRatio})
+                          </span>
+                        )}
+                        {cropHeaderInfo.isCustom &&
+                          cropHeaderInfo.customRatioWidth &&
+                          cropHeaderInfo.customRatioHeight && (
+                            <span className="text-[#6764F6] font-medium ml-1">
+                              {cropHeaderInfo.customRatioWidth}:{cropHeaderInfo.customRatioHeight}
+                            </span>
+                          )}
                       </span>
-                    )}
-                    {cropHeaderInfo.isCustom &&
-                      cropHeaderInfo.customRatioWidth &&
-                      cropHeaderInfo.customRatioHeight && (
-                        <span className="text-[#6764F6] font-medium ml-1">
-                          {cropHeaderInfo.customRatioWidth}:{cropHeaderInfo.customRatioHeight}
-                        </span>
-                      )}
-                  </span>
+                    </>
+                  )}
                 </div>
                 <div className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
-                  {cropHeaderInfo.widthPx && cropHeaderInfo.heightPx
-                    ? `${cropHeaderInfo.widthPx} x ${cropHeaderInfo.heightPx} px`
-                    : `${imageState.width} x ${imageState.height} px`}
+                  {pixelWidth} x {pixelHeight} px
                 </div>
               </div>
-            )}
-
-            {/* When no banners are visible, keep the vertical space so the
-                image card and overlays do not shift up or down. */}
-            {!hasAnyBanner && !(editorMode === "crop" && cropHeaderInfo.isActive) && (
-              <div className="h-[56px]" aria-hidden="true" />
             )}
           </div>
         </div>
