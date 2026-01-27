@@ -65,7 +65,7 @@ export default function MetadataStep1({
       </div>
 
       {/* Content - Reduced padding */}
-      <div className="flex-1 flex flex-col lg:flex-row gap-3 sm:gap-4 lg:gap-5 px-4 sm:px-6 lg:px-8 py-3 sm:py-4 lg:py-4 min-h-0 overflow-hidden">
+      <div className="flex-1 flex flex-col lg:flex-row gap-3 sm:gap-4 lg:gap-5 px-4 sm:px-6 lg:px-8 py-3 sm:py-4 lg:py-4 min-h-0 overflow-auto">
         <ImagePreview 
           imageState={imageState}
           aiDisplayInfo={aiDisplayInfo}
@@ -105,7 +105,6 @@ export default function MetadataStep1({
                 onCheckedChange={(checked) =>
                   onSourceInfoChange({ ...sourceInfo, campaignEnabled: checked, campaign: checked ? sourceInfo.campaign : "" })
                 }
-                className="data-[state=checked]:bg-[#6764F6]"
               />
               <label className="text-sm font-medium">Campaign name</label>
             </div>
@@ -127,7 +126,6 @@ export default function MetadataStep1({
                 onCheckedChange={(checked) =>
                   onSourceInfoChange({ ...sourceInfo, productEnabled: checked, product: checked ? sourceInfo.product : "" })
                 }
-                className="data-[state=checked]:bg-[#6764F6]"
               />
               <label className="text-sm font-medium">Product name</label>
             </div>
@@ -168,8 +166,8 @@ export default function MetadataStep1({
         </div>
       </div>
 
-      {/* Footer - Reduced padding */}
-      <div className="flex-shrink-0 px-4 sm:px-6 lg:px-8 pb-3 sm:pb-4 lg:pb-6 pt-2 sm:pt-3 flex justify-between border-t border-border">
+      {/* Footer - Reduced padding, no divider line */}
+      <div className="flex-shrink-0 px-4 sm:px-6 lg:px-8 pb-3 sm:pb-4 lg:pb-6 pt-2 sm:pt-3 flex justify-between">
         <button 
           onClick={onCancel}
           className="abb-gradient-hover-pill"

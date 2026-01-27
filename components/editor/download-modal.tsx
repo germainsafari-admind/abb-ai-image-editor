@@ -667,9 +667,9 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
       <div 
         className={`bg-white flex flex-col w-full ${
           isMetadataStep
-            ? "max-w-[890px] max-h-[calc(100vh-32px)] sm:max-h-[calc(100vh-40px)] lg:max-h-[calc(100vh-48px)]" 
+            ? "max-w-[890px] lg:w-[890px] lg:h-[700px] max-h-[calc(100vh-32px)] sm:max-h-[calc(100vh-40px)] lg:max-h-[calc(100vh-64px)]" 
             : "max-w-[800px] max-h-[calc(100vh-32px)] sm:max-h-[calc(100vh-40px)] lg:max-h-[calc(100vh-48px)]"
-        } ${isMetadataStep ? "overflow-hidden" : "overflow-auto"}`}
+        } overflow-auto`}
         style={{
           borderRadius: '8px',
           paddingTop: isMetadataStep ? '0' : '56px',
