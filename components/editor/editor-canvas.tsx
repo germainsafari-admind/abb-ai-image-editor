@@ -62,6 +62,13 @@ export default function EditorCanvas({
 
   // AI Edit state
   const [aiPrompt, setAiPrompt] = useState("")
+  const [aiPresetKey, setAiPresetKey] = useState<string | null>(null)
+
+  const AI_PRESETS = [
+    { key: "remove-bg", label: "Remove background" },
+    { key: "add-object", label: "Add object" },
+    { key: "change-bg", label: "Change background" },
+  ] as const
   const [isGenerating, setIsGenerating] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -760,35 +767,87 @@ export default function EditorCanvas({
     abortControllerRef.current = new AbortController()
 
     try {
-      const response = await fetch("/api/edit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          imageUrl: imageState.currentUrl,
-          prompt: aiPrompt,
-          presets: [],
-          // Pass original dimensions to preserve aspect ratio
-          width: imageState.width,
-          height: imageState.height,
-        }),
-        signal: abortControllerRef.current.signal,
-      })
+      // Special-case handling for true background removal using remove.bg
+      if (aiPresetKey === "remove-bg") {
+        // Ensure we have a data URL for the current image, similar to download/export flow
+        let imageDataUrl = imageState.currentUrl
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        // Handle specific error cases
-        if (data.error?.includes("credits") || data.error?.includes("quota")) {
-          throw new Error("Insufficient credits. Please upgrade your plan or try again later.")
+        if (!imageDataUrl.startsWith("data:")) {
+          try {
+            const response = await fetch(imageState.currentUrl)
+            const blob = await response.blob()
+            const reader = new FileReader()
+            imageDataUrl = await new Promise<string>((resolve, reject) => {
+              reader.onloadend = () => {
+                if (typeof reader.result === "string") {
+                  resolve(reader.result)
+                } else {
+                  reject(new Error("Failed to convert image to data URL"))
+                }
+              }
+              reader.onerror = reject
+              reader.readAsDataURL(blob)
+            })
+          } catch (error) {
+            throw new Error("Failed to prepare image for background removal. Please try again.")
+          }
         }
-        throw new Error(data.error || "Generation failed")
-      }
 
-      onAIEditResult({
-        beforeUrl: imageState.currentUrl,
-        afterUrl: data.editedImageUrl,
-      })
-      onModeChange("ai-result")
+        const removeBgResponse = await fetch("/api/remove-bg", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageDataUrl }),
+          signal: abortControllerRef.current.signal,
+        })
+
+        if (!removeBgResponse.ok) {
+          const errorData = await removeBgResponse.json().catch(() => ({
+            error: "Failed to remove background",
+          }))
+          throw new Error(errorData.error || "Failed to remove background. Please try again.")
+        }
+
+        const resultBlob = await removeBgResponse.blob()
+        const resultUrl = URL.createObjectURL(resultBlob)
+
+        onAIEditResult({
+          beforeUrl: imageState.currentUrl,
+          afterUrl: resultUrl,
+        })
+        onModeChange("ai-result")
+      } else {
+        const presetsToSend = aiPresetKey ? [aiPresetKey] : []
+
+        const response = await fetch("/api/edit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            imageUrl: imageState.currentUrl,
+            prompt: aiPrompt,
+            presets: presetsToSend,
+            // Pass original dimensions to preserve aspect ratio
+            width: imageState.width,
+            height: imageState.height,
+          }),
+          signal: abortControllerRef.current.signal,
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+          // Handle specific error cases
+          if (data.error?.includes("credits") || data.error?.includes("quota")) {
+            throw new Error("Insufficient credits. Please upgrade your plan or try again later.")
+          }
+          throw new Error(data.error || "Generation failed")
+        }
+
+        onAIEditResult({
+          beforeUrl: imageState.currentUrl,
+          afterUrl: data.editedImageUrl,
+        })
+        onModeChange("ai-result")
+      }
     } catch (error: unknown) {
       // Don't show error if it was aborted
       if (error instanceof Error && error.name === "AbortError") {
@@ -810,8 +869,9 @@ export default function EditorCanvas({
     setAiError(null)
   }
 
-  const handlePresetClick = (preset: string) => {
-    setAiPrompt(preset)
+  const handlePresetClick = (presetKey: string, presetLabel: string) => {
+    setAiPresetKey(presetKey)
+    setAiPrompt(presetLabel)
   }
 
   return (
@@ -1106,7 +1166,11 @@ export default function EditorCanvas({
               <input
                 type="text"
                 value={aiPrompt}
-                onChange={(e) => setAiPrompt(e.target.value)}
+                onChange={(e) => {
+                  setAiPrompt(e.target.value)
+                  // If the user starts typing, treat it as a custom prompt (no preset)
+                  setAiPresetKey(null)
+                }}
                 placeholder="Describe what you would like to change..."
                 className="w-full p-3 border-0 bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none text-sm"
                 onKeyDown={(e) => e.key === "Enter" && handleAIGenerate()}
@@ -1115,19 +1179,19 @@ export default function EditorCanvas({
 
               <div className="flex items-center justify-between mt-4">
                 <div className="flex flex-wrap gap-2">
-                  {["Remove background", "Add object", "Change background"].map((preset) => (
+                  {AI_PRESETS.map((preset) => (
                     <button
-                      key={preset}
-                      onClick={() => handlePresetClick(preset)}
+                      key={preset.key}
+                      onClick={() => handlePresetClick(preset.key, preset.label)}
                       className={`text-xs font-medium rounded-2xl border transition-colors flex items-center ${
-                        aiPrompt === preset
+                        aiPrompt === preset.label
                           ? "bg-[#6764F6] text-white border-[#6764F6]"
                           : "bg-white text-gray-700 border-gray-300 hover:bg-[#E4E7FF] hover:text-gray-900 hover:border-[#E4E7FF]"
                       }`}
                       style={{ paddingTop: "9px", paddingBottom: "9px", paddingLeft: "8px", paddingRight: "8px" }}
                       disabled={isGenerating}
                     >
-                      {preset}
+                      {preset.label}
                     </button>
                   ))}
                 </div>
