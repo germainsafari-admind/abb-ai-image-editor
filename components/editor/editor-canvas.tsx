@@ -91,15 +91,17 @@ export default function EditorCanvas({
   // Determine if crop rectangle should be shown
   const showCropOverlay = editorMode === "crop" && cropInitialized && (selectedPreset !== null || isCustom)
 
-  // Load original image dimensions when imageState changes
+  // Load crop source image dimensions when imageState changes (for crop calculations)
+  // cropSourceUrl is the full base image (original or latest AI result)
   useEffect(() => {
     const img = new Image()
     img.crossOrigin = "anonymous"
     img.onload = () => {
       setOriginalImageDims({ width: img.width, height: img.height })
     }
-    img.src = imageState.originalUrl
-  }, [imageState.originalUrl])
+    // Use cropSourceUrl to get dimensions of the full base image for cropping
+    img.src = imageState.cropSourceUrl
+  }, [imageState.cropSourceUrl])
 
   // Helper to calculate actual displayed image bounds (accounting for object-contain)
   const getDisplayedImageBounds = useCallback(() => {
@@ -108,17 +110,17 @@ export default function EditorCanvas({
     const rect = imageRef.current.getBoundingClientRect()
     const img = imageRef.current
     
-    // In crop mode, we display the original image, so use its natural dimensions
-    // Otherwise, prefer stored original dimensions, then natural dimensions, then fallback
+    // Use the displayed image's natural dimensions for accurate crop calculations
+    // In crop mode, we display currentUrl (which may be AI-edited or previously cropped)
     let naturalWidth: number
     let naturalHeight: number
     
     if (editorMode === "crop" && img.naturalWidth > 0 && img.naturalHeight > 0) {
-      // In crop mode, the displayed image is the original, so use its natural dimensions
+      // In crop mode, use the displayed image's natural dimensions
       naturalWidth = img.naturalWidth
       naturalHeight = img.naturalHeight
     } else {
-      // Use stored original dimensions, or natural dimensions, or fallback to current state
+      // Use stored current image dimensions, or natural dimensions, or fallback to current state
       naturalWidth = originalImageDims.width || img.naturalWidth || imageState.width
       naturalHeight = originalImageDims.height || img.naturalHeight || imageState.height
     }
@@ -264,21 +266,22 @@ export default function EditorCanvas({
     if (editorMode === "crop" && imageRef.current && cropInitialized) {
       const imageBounds = getDisplayedImageBounds()
       
-      // Load original image to get its dimensions for accurate scaling
-      const originalImg = new Image()
-      originalImg.crossOrigin = "anonymous"
-      originalImg.onload = () => {
-        const scaleX = originalImg.width / imageBounds.width
-        const scaleY = originalImg.height / imageBounds.height
+      // Load crop source image to get its dimensions for accurate scaling
+      // cropSourceUrl is the full base image (original or latest AI result)
+      const sourceImg = new Image()
+      sourceImg.crossOrigin = "anonymous"
+      sourceImg.onload = () => {
+        const scaleX = sourceImg.width / imageBounds.width
+        const scaleY = sourceImg.height / imageBounds.height
 
         setDisplayedDims({
           width: Math.round(cropDims.width * scaleX),
           height: Math.round(cropDims.height * scaleY),
         })
       }
-      originalImg.src = imageState.originalUrl
+      sourceImg.src = imageState.cropSourceUrl
     }
-  }, [cropDims, editorMode, imageState.originalUrl, cropInitialized, getDisplayedImageBounds])
+  }, [cropDims, editorMode, imageState.cropSourceUrl, cropInitialized, getDisplayedImageBounds])
 
   // Listen for apply crop event from controls row
   useEffect(() => {
@@ -685,18 +688,19 @@ export default function EditorCanvas({
   const handleApplyCropInternal = () => {
     if (!imageRef.current) return
 
-    // Always use original image for cropping
-    const originalImg = new Image()
-    originalImg.crossOrigin = "anonymous"
+    // Use cropSourceUrl for cropping (the full base image - original or latest AI result)
+    // This ensures the user always crops from the full image, not a previously cropped version
+    const sourceImg = new Image()
+    sourceImg.crossOrigin = "anonymous"
     
-    originalImg.onload = () => {
+    sourceImg.onload = () => {
       // Get the displayed image element's bounding rect
       const rect = imageRef.current!.getBoundingClientRect()
       
       // Calculate actual displayed image dimensions (accounting for object-contain)
       // The image might be smaller than the container due to aspect ratio
       const containerAspect = rect.width / rect.height
-      const imageAspect = originalImg.width / originalImg.height
+      const imageAspect = sourceImg.width / sourceImg.height
       
       let displayedWidth: number
       let displayedHeight: number
@@ -715,9 +719,9 @@ export default function EditorCanvas({
         offsetX = (rect.width - displayedWidth) / 2
       }
       
-      // Calculate scale factors from displayed size to original size
-      const scaleX = originalImg.width / displayedWidth
-      const scaleY = originalImg.height / displayedHeight
+      // Calculate scale factors from displayed size to source size
+      const scaleX = sourceImg.width / displayedWidth
+      const scaleY = sourceImg.height / displayedHeight
       
       // Adjust crop dimensions to account for image offset within container
       const adjustedX = cropDims.x - offsetX
@@ -729,17 +733,17 @@ export default function EditorCanvas({
       const clampedW = Math.max(0, Math.min(cropDims.width, displayedWidth - clampedX))
       const clampedH = Math.max(0, Math.min(cropDims.height, displayedHeight - clampedY))
       
-      // Convert to original image coordinates
+      // Convert to source image coordinates
       const actualX = clampedX * scaleX
       const actualY = clampedY * scaleY
       const actualW = clampedW * scaleX
       const actualH = clampedH * scaleY
       
-      // Ensure we don't exceed original image bounds
-      const finalX = Math.max(0, Math.min(actualX, originalImg.width))
-      const finalY = Math.max(0, Math.min(actualY, originalImg.height))
-      const finalW = Math.max(0, Math.min(actualW, originalImg.width - finalX))
-      const finalH = Math.max(0, Math.min(actualH, originalImg.height - finalY))
+      // Ensure we don't exceed source image bounds
+      const finalX = Math.max(0, Math.min(actualX, sourceImg.width))
+      const finalY = Math.max(0, Math.min(actualY, sourceImg.height))
+      const finalW = Math.max(0, Math.min(actualW, sourceImg.width - finalX))
+      const finalH = Math.max(0, Math.min(actualH, sourceImg.height - finalY))
 
       const canvas = document.createElement("canvas")
       canvas.width = finalW
@@ -747,13 +751,13 @@ export default function EditorCanvas({
       const ctx = canvas.getContext("2d")
       if (!ctx) return
 
-      ctx.drawImage(originalImg, finalX, finalY, finalW, finalH, 0, 0, finalW, finalH)
+      ctx.drawImage(sourceImg, finalX, finalY, finalW, finalH, 0, 0, finalW, finalH)
       const croppedUrl = canvas.toDataURL("image/jpeg", 0.95)
       onCropApply(croppedUrl, Math.round(finalW), Math.round(finalH))
     }
     
-    // Always use originalUrl to ensure we crop from the original image
-    originalImg.src = imageState.originalUrl
+    // Use cropSourceUrl to crop from the full base image (original or latest AI result)
+    sourceImg.src = imageState.cropSourceUrl
   }
 
   // AI Edit handlers
@@ -975,10 +979,10 @@ export default function EditorCanvas({
               {/* Image card - stable container that never moves */}
               <div className="relative w-full overflow-hidden bg-muted/40">
                 <div className="relative w-full flex items-center justify-center overflow-hidden">
-                  {/* Image - use original when in crop mode, current otherwise */}
+                  {/* Image - in crop mode, show the full base image (cropSourceUrl); otherwise show currentUrl */}
                   <img
                     ref={imageRef}
-                    src={editorMode === "crop" ? imageState.originalUrl : imageState.currentUrl || "/placeholder.svg"}
+                    src={editorMode === "crop" ? imageState.cropSourceUrl : (imageState.currentUrl || "/placeholder.svg")}
                     alt="Editor canvas"
                     className="w-full h-auto object-contain relative z-0 block transition-[max-height] duration-200"
                     style={{ maxHeight: dynamicMaxHeight }}
@@ -995,7 +999,7 @@ export default function EditorCanvas({
                         }`}
                       >
                         <img
-                          src={editorMode === "crop" ? imageState.originalUrl : imageState.currentUrl || "/placeholder.svg"}
+                          src={editorMode === "crop" ? imageState.cropSourceUrl : (imageState.currentUrl || "/placeholder.svg")}
                           alt="Blurred edges"
                           className="w-full h-full object-contain blur-lg"
                           style={{
@@ -1013,7 +1017,7 @@ export default function EditorCanvas({
                         }`}
                       >
                         <img
-                          src={editorMode === "crop" ? imageState.originalUrl : imageState.currentUrl || "/placeholder.svg"}
+                          src={editorMode === "crop" ? imageState.cropSourceUrl : (imageState.currentUrl || "/placeholder.svg")}
                           alt="Blurred mid areas"
                           className="w-full h-full object-contain blur-md"
                           style={{
@@ -1031,7 +1035,7 @@ export default function EditorCanvas({
                         }`}
                       >
                         <img
-                          src={editorMode === "crop" ? imageState.originalUrl : imageState.currentUrl || "/placeholder.svg"}
+                          src={editorMode === "crop" ? imageState.cropSourceUrl : (imageState.currentUrl || "/placeholder.svg")}
                           alt="Blurred center"
                           className="w-full h-full object-contain blur-sm"
                           style={{

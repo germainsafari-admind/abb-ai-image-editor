@@ -1,6 +1,7 @@
 export interface ImageState {
   originalUrl: string
   currentUrl: string
+  cropSourceUrl: string // The base image for cropping (original or latest AI result)
   width: number
   height: number
   isBlurred: boolean

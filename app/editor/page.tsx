@@ -108,6 +108,7 @@ export default function EditorPage() {
       const newState: ImageState = {
         originalUrl: resolvedImageUrl,
         currentUrl: resolvedImageUrl,
+        cropSourceUrl: resolvedImageUrl, // Initially same as original
         width: img.width,
         height: img.height,
         isBlurred: false,
@@ -190,6 +191,7 @@ export default function EditorPage() {
       const newState: ImageState = {
         ...imageState,
         currentUrl: editedImageUrl,
+        cropSourceUrl: editedImageUrl, // AI result becomes the new base for cropping
         isAIGenerated: true,
       }
       addToHistory(newState)
