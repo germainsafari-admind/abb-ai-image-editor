@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { Undo2, Redo2, ExternalLink } from "lucide-react"
+import Image from "next/image"
+import { ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import DownloadModal from "./download-modal"
@@ -89,9 +90,9 @@ export default function ControlsRow({
                     size="sm"
                     onClick={onUndo}
                     disabled={!canUndo}
-                    className="h-9 w-9 p-0 rounded-md text-gray-800 hover:text-gray-950 hover:bg-gray-200 active:bg-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    className="h-9 w-9 p-0 rounded-md text-[#000000] hover:bg-[#FFF] active:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
-                    <Undo2 className="w-[18px] h-[18px] stroke-[2.5]" />
+                    <Image src="/undo.svg" alt="Undo" width={18} height={18} className="w-[18px] h-[18px]" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -106,9 +107,9 @@ export default function ControlsRow({
                     size="sm"
                     onClick={onRedo}
                     disabled={!canRedo}
-                    className="h-9 w-9 p-0 rounded-md text-gray-800 hover:text-gray-950 hover:bg-gray-200 active:bg-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    className="h-9 w-9 p-0 rounded-md text-[#000000] hover:bg-[#FFF] active:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
-                    <Redo2 className="w-[18px] h-[18px] stroke-[2.5]" />
+                    <Image src="/redo.svg" alt="Redo" width={18} height={18} className="w-[18px] h-[18px]" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -126,10 +127,10 @@ export default function ControlsRow({
                     variant="ghost"
                     size="sm"
                     onClick={() => onModeChange(isCropMode ? "view" : "crop")}
-                    className={`h-9 w-9 p-0 rounded-md transition-colors ${
+                    className={`h-9 w-9 p-0 rounded-md text-[#000000] hover:bg-[#FFF] transition-colors [&_svg]:text-[#000000] ${
                       isCropMode
-                        ? "bg-[#6764F6] hover:bg-[#5653E5] active:bg-[#4542D4] text-white"
-                        : "text-gray-800 hover:text-gray-950 hover:bg-gray-200 active:bg-gray-300"
+                        ? "bg-[#6764F6] hover:bg-[#FFF] active:bg-[#4542D4]"
+                        : "active:bg-gray-200"
                     }`}
                   >
                     <CropIcon className="w-[18px] h-[18px]" />
@@ -147,10 +148,10 @@ export default function ControlsRow({
                     variant="ghost"
                     size="sm"
                     onClick={() => onModeChange(isAIEditMode ? "view" : "ai-edit")}
-                    className={`h-9 w-9 p-0 rounded-md transition-colors ${
+                    className={`h-9 w-9 p-0 rounded-md text-[#000000] hover:bg-[#FFF] transition-colors [&_svg]:text-[#000000] ${
                       isAIEditMode
-                        ? "bg-[#6764F6] hover:bg-[#5653E5] active:bg-[#4542D4] text-white"
-                        : "text-gray-800 hover:text-gray-950 hover:bg-gray-200 active:bg-gray-300"
+                        ? "bg-[#6764F6] hover:bg-[#FFF] active:bg-[#4542D4]"
+                        : "active:bg-gray-200"
                     }`}
                   >
                     <AIIcon className="w-[18px] h-[18px]" />
@@ -168,10 +169,10 @@ export default function ControlsRow({
                     variant="ghost"
                     size="sm"
                     onClick={onBlur}
-                    className={`h-9 w-9 p-0 rounded-md transition-colors ${
+                    className={`h-9 w-9 p-0 rounded-md text-[#000000] hover:bg-[#FFF] transition-colors [&_svg]:text-[#000000] ${
                       isBlurred
-                        ? "bg-[#6764F6] hover:bg-[#5653E5] active:bg-[#4542D4] text-white"
-                        : "text-gray-800 hover:text-gray-950 hover:bg-gray-200 active:bg-gray-300"
+                        ? "bg-[#6764F6] hover:bg-[#FFF] active:bg-[#4542D4]"
+                        : "active:bg-gray-200"
                     }`}
                   >
                     <BlurIcon className="w-[18px] h-[18px]" />

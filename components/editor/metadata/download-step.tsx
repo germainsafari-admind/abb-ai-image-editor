@@ -1,8 +1,7 @@
 "use client"
 
-import { DownloadIcon, ExternalLink, Info } from "lucide-react"
+import { DownloadIcon, ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import type { ImageState } from "@/types/editor"
 
 interface DownloadStepProps {
@@ -14,7 +13,6 @@ interface DownloadStepProps {
   metadataApplied: boolean
   previewFileName: string
   isDownloading: boolean
-  isMediaBankWidthSupported: boolean
   onDownload: () => void
   onUploadToMediaBank: () => void
   onCancel: () => void
@@ -29,7 +27,6 @@ export default function DownloadStep({
   metadataApplied,
   previewFileName,
   isDownloading,
-  isMediaBankWidthSupported,
   onDownload,
   onUploadToMediaBank,
   onCancel,
@@ -99,22 +96,10 @@ export default function DownloadStep({
         <div className="grid grid-cols-3 gap-4">
           <div>
             <div className="text-xs font-medium text-black mb-1">Image size</div>
-            <div className={`flex items-center gap-1.5 ${imageState.width < 1440 ? "text-[#FF000F]" : "text-gray-500"}`}>
-              <span className={`text-sm font-medium ${imageState.width < 1440 ? "text-[#FF000F]" : "text-gray-500"}`}>
+            <div className="flex items-center gap-1.5 text-gray-500">
+              <span className="text-sm font-medium text-gray-500">
                 {imageSize}
               </span>
-              {imageState.width < 1440 && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex items-center justify-center cursor-help">
-                      <Info className="w-4 h-4 text-[#FF000F]" />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>This image width is not supported when uploading to the media bank.</p>
-                  </TooltipContent>
-                </Tooltip>
-              )}
             </div>
           </div>
           <div>
@@ -178,7 +163,7 @@ export default function DownloadStep({
             </Button>
             <Button
               onClick={onUploadToMediaBank}
-              disabled={isDownloading || !isMediaBankWidthSupported}
+              disabled={isDownloading}
               className="text-white transition-colors hover:opacity-90 disabled:opacity-50"
               style={{
                 backgroundColor: '#FF000F',

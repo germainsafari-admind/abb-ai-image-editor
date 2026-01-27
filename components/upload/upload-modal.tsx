@@ -29,55 +29,6 @@ function UploadArrowIcon({ className }: { className?: string }) {
   )
 }
 
-// Media Bank Width Warning Popup Component
-function MediaBankWidthWarning({
-  onUploadNew,
-  onProceed
-}: {
-  onUploadNew: () => void
-  onProceed: () => void
-}) {
-  return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div 
-        className="bg-white rounded-lg w-[800px] shadow-2xl animate-fade-in"
-        style={{
-          boxShadow: '0 0 58.2px 0 rgba(0, 0, 0, 0.25)'
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="pt-[48px] pr-[40px] pb-[48px] pl-[40px]">
-          <h2 
-            className="text-[32px] font-bold tracking-tight uppercase mb-[48px]"
-            style={{ fontFamily: 'var(--font-abb-voice-display)' }}
-          >
-            MEDIA BANK (MIN 1440PX)
-          </h2>
-
-          <p className="text-base text-black mb-[48px] leading-relaxed">
-            The file you uploaded is narrower than the minimum width required for ABB Media Bank. Upload an image at least <span className="font-bold">1440px</span> wide or continue without exporting to Media Bank.
-          </p>
-
-          <div className="flex items-center gap-4">
-            <button
-              onClick={onUploadNew}
-              className="px-6 py-3 border border-black bg-white text-black rounded-lg font-medium text-sm hover:bg-gray-50 transition-colors"
-            >
-              Upload new image
-            </button>
-            <button
-              onClick={onProceed}
-              className="px-6 py-3 bg-[#E30613] hover:bg-[#c70510] text-white rounded-lg font-medium text-sm transition-colors"
-            >
-              Proceed with that image
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 interface UploadContentProps {
   onImageUploaded: (imageUrl: string) => void
   containerWidth?: string
@@ -90,8 +41,6 @@ export function UploadContent({ onImageUploaded, containerWidth = "890px" }: Upl
   const [error, setError] = useState<string | null>(null)
   const [isHovered, setIsHovered] = useState(false)
   const [isDragActive, setIsDragActive] = useState(false)
-  const [showWidthWarning, setShowWidthWarning] = useState(false)
-  const [pendingImageUrl, setPendingImageUrl] = useState<string | null>(null)
 
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault()
@@ -127,10 +76,6 @@ export function UploadContent({ onImageUploaded, containerWidth = "890px" }: Upl
     setError(null)
 
     try {
-      // Check image dimensions before uploading
-      const imageWidth = await getImageWidth(file)
-      const isNarrowerThanRequired = imageWidth < 1440
-
       const formData = new FormData()
       formData.append('file', file)
 
@@ -158,39 +103,12 @@ export function UploadContent({ onImageUploaded, containerWidth = "890px" }: Upl
         console.warn("Failed to store lastUploadedImage in localStorage", storageError)
       }
 
-      // If image is narrower than 1440px, show warning popup
-      if (isNarrowerThanRequired) {
-        setIsUploading(false)
-        setShowWidthWarning(true)
-        setPendingImageUrl(imageUrl)
-        return
-      }
-
       onImageUploaded(imageUrl)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Upload failed. Please try again."
       setError(errorMessage)
       setIsUploading(false)
     }
-  }
-
-  const getImageWidth = (file: File): Promise<number> => {
-    return new Promise((resolve, reject) => {
-      const img = new Image()
-      const url = URL.createObjectURL(file)
-      
-      img.onload = () => {
-        URL.revokeObjectURL(url)
-        resolve(img.width)
-      }
-      
-      img.onerror = () => {
-        URL.revokeObjectURL(url)
-        reject(new Error('Failed to load image'))
-      }
-      
-      img.src = url
-    })
   }
 
   const isActiveState = isDragActive || isHovered
@@ -288,11 +206,8 @@ export function UploadContent({ onImageUploaded, containerWidth = "890px" }: Upl
               <p className="text-xs text-gray-500 transition-all duration-200">
                 Supported formats: <span className="font-semibold">JPG, PNG, EPS</span>
               </p>
-              <p className="text-xs text-gray-500 transition-all duration-200">
-                Max file size: <span className="font-semibold">20 MB</span>
-              </p>
               <p className="text-xs text-gray-500 mb-5 transition-all duration-200">
-                Minimum image width for Media Bank: <span className="font-semibold">1440px</span>
+                Max file size: <span className="font-semibold">20 MB</span>
               </p>
               <span className="inline-flex items-center gap-2 bg-[#E30613] hover:bg-[#c70510] text-white px-5 py-2.5 rounded-full text-sm font-medium transition-colors">
                 Upload image
@@ -306,23 +221,6 @@ export function UploadContent({ onImageUploaded, containerWidth = "890px" }: Upl
           <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">{error}</div>
         )}
       </div>
-
-      {/* Media Bank Width Warning Popup */}
-      {showWidthWarning && (
-        <MediaBankWidthWarning
-          onUploadNew={() => {
-            setShowWidthWarning(false)
-            setPendingImageUrl(null)
-            document.getElementById('file-upload')?.click()
-          }}
-          onProceed={() => {
-            if (pendingImageUrl) {
-              setShowWidthWarning(false)
-              onImageUploaded(pendingImageUrl)
-            }
-          }}
-        />
-      )}
     </div>
   )
 }

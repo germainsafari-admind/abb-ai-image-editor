@@ -421,21 +421,38 @@
 
 /* Upload dropzone dashed border (8px dash, 10px gap) */
 .upload-dropzone {
-  --dropzone-border-color: #A9A9A9;
   position: relative;
   border-radius: 8px !important;
   border: none !important;
+}
+
+/* Dashed border using pseudo-element */
+.upload-dropzone::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: 1;
   background: 
-    linear-gradient(90deg, var(--dropzone-border-color) 8px, transparent 8px) repeat-x top left / 18px 1px,
-    linear-gradient(90deg, var(--dropzone-border-color) 8px, transparent 8px) repeat-x bottom left / 18px 1px,
-    linear-gradient(0deg, var(--dropzone-border-color) 8px, transparent 8px) repeat-y top left / 1px 18px,
-    linear-gradient(0deg, var(--dropzone-border-color) 8px, transparent 8px) repeat-y top right / 1px 18px;
+    linear-gradient(90deg, #A9A9A9 8px, transparent 8px) repeat-x top left / 18px 1px,
+    linear-gradient(90deg, #A9A9A9 8px, transparent 8px) repeat-x bottom left / 18px 1px,
+    linear-gradient(0deg, #A9A9A9 8px, transparent 8px) repeat-y top left / 1px 18px,
+    linear-gradient(0deg, #A9A9A9 8px, transparent 8px) repeat-y top right / 1px 18px;
 }
 
-.upload-dropzone.upload-dropzone-hover {
-  --dropzone-border-color: #6764F6;
+.upload-dropzone.upload-dropzone-hover::before {
+  background: 
+    linear-gradient(90deg, #6764F6 8px, transparent 8px) repeat-x top left / 18px 1px,
+    linear-gradient(90deg, #6764F6 8px, transparent 8px) repeat-x bottom left / 18px 1px,
+    linear-gradient(0deg, #6764F6 8px, transparent 8px) repeat-y top left / 1px 18px,
+    linear-gradient(0deg, #6764F6 8px, transparent 8px) repeat-y top right / 1px 18px;
 }
 
-.upload-dropzone.upload-dropzone-error {
-  --dropzone-border-color: #FFB8A8;
+.upload-dropzone.upload-dropzone-error::before {
+  background: 
+    linear-gradient(90deg, #FFDCCD 8px, transparent 8px) repeat-x top left / 18px 1px,
+    linear-gradient(90deg, #FFDCCD 8px, transparent 8px) repeat-x bottom left / 18px 1px,
+    linear-gradient(0deg, #FFDCCD 8px, transparent 8px) repeat-y top left / 1px 18px,
+    linear-gradient(0deg, #FFDCCD 8px, transparent 8px) repeat-y top right / 1px 18px;
 }

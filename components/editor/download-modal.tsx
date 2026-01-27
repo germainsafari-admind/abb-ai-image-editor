@@ -233,7 +233,6 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
   }, [sourceInfo, imageState.originalFileName])
 
   const canGenerateMetadata = !!(sourceInfo.business && sourceInfo.assetType)
-  const isMediaBankWidthSupported = imageState.width >= 1440
 
   const aiDisplayInfo = useMemo(() => {
     if (aiDetectionResult) {
@@ -336,11 +335,6 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
   }
 
   const handleUploadToMediaBank = async () => {
-    if (!isMediaBankWidthSupported) {
-      alert("Image width must be at least 1440px to upload to Media Bank.")
-      return
-    }
-    
     setIsDownloading(true)
     try {
       let dataUrl: string
@@ -695,7 +689,6 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
             metadataApplied={metadataApplied}
             previewFileName={previewFileName}
             isDownloading={isDownloading}
-            isMediaBankWidthSupported={isMediaBankWidthSupported}
             onDownload={handleDownload}
             onUploadToMediaBank={handleUploadToMediaBank}
             onCancel={onClose}
