@@ -939,22 +939,22 @@ export default function EditorCanvas({
                     onAIEditResult(null)
                     onModeChange("ai-edit")
                   }}
-                  className="flex items-center gap-2 px-4 border-2 border-black rounded-full hover:bg-gray-50 transition-colors"
+                  className="abb-gradient-hover-pill flex items-center gap-2"
                   style={{
                     fontFamily: 'var(--font-abb-voice)',
                     fontWeight: 500,
                     fontSize: '12px',
                     lineHeight: '100%',
-                    color: '#1F1F1F',
                     height: '48px',
-                    borderRadius: '28px',
+                    paddingLeft: '16px',
+                    paddingRight: '16px',
                   }}
                 >
-                  Retry <RetryIcon />
+                  <span className="text-[#000000]">Retry</span> <RetryIcon className="w-4 h-4 text-[#000000]" />
                 </button>
                 <button
                   onClick={() => onAIEditApply(aiEditResult.afterUrl)}
-                  className="px-4 bg-[#E30613] hover:bg-[#c70510] text-white rounded-full transition-colors"
+                  className="abb-red-button-gradient-hover px-4 bg-[#E30613] text-white rounded-full"
                   style={{
                     fontFamily: 'var(--font-abb-voice)',
                     fontWeight: 500,
@@ -1203,7 +1203,7 @@ export default function EditorCanvas({
                 <button
                   onClick={handleAIGenerate}
                   disabled={!aiPrompt.trim() || isGenerating}
-                  className="h-10 px-4 bg-[#EE0000] hover:bg-[#c70510] text-white rounded-full text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
+                  className="abb-red-button-gradient-hover h-10 px-4 bg-[#EE0000] text-white rounded-full text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                 >
                   {isGenerating ? "Generating..." : "Generate"}
                 </button>

@@ -127,9 +127,19 @@ export default function MetadataStep2({
                 placeholder="Type here..."
                 className="flex-1 h-9 sm:h-10 text-sm"
               />
-              <Button variant="outline" onClick={onAddTag} className="h-9 sm:h-10 text-sm">
+              <button 
+                onClick={onAddTag} 
+                className="abb-gradient-hover-pill"
+                style={{
+                  height: '40px',
+                  paddingLeft: '20px',
+                  paddingRight: '20px',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                }}
+              >
                 Add
-              </Button>
+              </button>
             </div>
           </div>
         </div>
@@ -156,7 +166,7 @@ export default function MetadataStep2({
         <Button
           onClick={onApply}
           disabled={isApplyingMetadata}
-          className="text-white transition-colors hover:opacity-90 disabled:opacity-50"
+          className="abb-red-button-gradient-hover text-white disabled:opacity-50"
           style={{
             backgroundColor: '#FF000F',
             height: '40px',

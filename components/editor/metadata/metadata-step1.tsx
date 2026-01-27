@@ -170,29 +170,23 @@ export default function MetadataStep1({
 
       {/* Footer - Reduced padding */}
       <div className="flex-shrink-0 px-4 sm:px-6 lg:px-8 pb-3 sm:pb-4 lg:pb-6 pt-2 sm:pt-3 flex justify-between border-t border-border">
-        <Button 
-          variant="outline" 
+        <button 
           onClick={onCancel}
-          className="transition-colors hover:opacity-90"
+          className="abb-gradient-hover-pill"
           style={{
             height: '40px',
-            borderRadius: '28px',
-            borderWidth: '2px',
-            borderColor: '#000000',
             paddingLeft: '20px',
             paddingRight: '20px',
             fontSize: '14px',
             fontWeight: 500,
-            backgroundColor: 'transparent',
-            color: '#000000'
           }}
         >
-          Cancel
-        </Button>
+          <span className="text-[#000000]">Cancel</span>
+        </button>
         <Button
           onClick={onGenerate}
           disabled={!canGenerateMetadata || isGenerating}
-          className="text-white transition-colors hover:opacity-90 disabled:opacity-50"
+          className="abb-red-button-gradient-hover text-white disabled:opacity-50"
           style={{
             backgroundColor: '#FF000F',
             height: '40px',

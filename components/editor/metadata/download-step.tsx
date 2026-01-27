@@ -121,30 +121,24 @@ export default function DownloadStep({
 
         {/* Action buttons */}
         <div className="flex items-center justify-between">
-          <Button 
-            variant="outline" 
+          <button 
             onClick={onCancel}
-            className="transition-colors hover:opacity-90"
+            className="abb-gradient-hover-pill"
             style={{
               height: '48px',
-              borderRadius: '28px',
-              borderWidth: '2px',
-              borderColor: '#000000',
               paddingLeft: '24px',
               paddingRight: '24px',
               fontSize: '16px',
               fontWeight: 500,
-              backgroundColor: 'transparent',
-              color: '#000000'
             }}
           >
-            Cancel
-          </Button>
+            <span className="text-[#000000]">Cancel</span>
+          </button>
           <div className="flex gap-3">
             <Button
               onClick={onDownload}
               disabled={isDownloading}
-              className="text-white transition-colors hover:opacity-90 disabled:opacity-50"
+              className="abb-red-button-gradient-hover text-white disabled:opacity-50"
               style={{
                 backgroundColor: '#FF000F',
                 height: '48px',
@@ -164,7 +158,7 @@ export default function DownloadStep({
             <Button
               onClick={onUploadToMediaBank}
               disabled={isDownloading}
-              className="text-white transition-colors hover:opacity-90 disabled:opacity-50"
+              className="abb-red-button-gradient-hover text-white disabled:opacity-50"
               style={{
                 backgroundColor: '#FF000F',
                 height: '48px',

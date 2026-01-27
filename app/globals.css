@@ -293,50 +293,63 @@
   transform-origin: 24px 24px;
 }
 
-/* Cancel X Button Styles - Pill shaped */
-.abb-cancel-pill-button {
-  position: relative;
-  height: 48px;
-  padding: 0 24px;
-  border-radius: 28px;
-  background: white;
-  color: #000000;
-  border: 1px solid #000000;
+/* White Pill Button with Gradient Border on Hover */
+/* Used for: Export options, Cancel, Retry, No thanks buttons */
+/* Default: 2px solid black border, white bg, black text */
+/* Hover: Gradient border (blue to red), white bg, black text */
+.abb-gradient-hover-pill {
+  border-radius: 28px !important;
+  background: white !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
   cursor: pointer;
 }
 
-.abb-cancel-pill-button::before {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  border-radius: 30px;
-  background: linear-gradient(135deg, #6764F6 0%, #E30613 100%);
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  z-index: -1;
+.abb-gradient-hover-pill:hover {
+  border: 2px solid transparent !important;
+  background: 
+    linear-gradient(white, white) padding-box,
+    linear-gradient(90deg, #615EEF 0%, #E00 100%) border-box !important;
 }
 
-.abb-cancel-pill-button::after {
-  content: '';
-  position: absolute;
-  inset: 1px;
-  border-radius: 26px;
-  background: white;
-  z-index: -1;
-  transition: inset 0.2s ease;
+/* Export options pill variant - matches control bar background */
+.export-options-pill {
+  background: #F0F0F0 !important;
+}
+
+.export-options-pill:hover {
+  background: 
+    linear-gradient(#F0F0F0, #F0F0F0) padding-box,
+    linear-gradient(90deg, #615EEF 0%, #E00 100%) border-box !important;
+}
+
+/* Legacy class alias for backward compatibility */
+.abb-cancel-pill-button {
+  height: 48px;
+  padding: 0 24px;
+  border-radius: 28px !important;
+  background: white !important;
+  color: #000000 !important;
+  border: 2px solid #000000 !important;
+  cursor: pointer;
 }
 
 .abb-cancel-pill-button:hover {
-  border-color: transparent;
+  border: 2px solid transparent !important;
+  background: 
+    linear-gradient(white, white) padding-box,
+    linear-gradient(90deg, #615EEF 0%, #E00 100%) border-box !important;
 }
 
-.abb-cancel-pill-button:hover::before {
-  opacity: 1;
+/* Red Pill Button with Gradient Background on Hover */
+/* Used for: Add Metadata, Apply, Download, Upload to Media Bank, Generate buttons */
+/* No animation - instant color change on hover */
+.abb-red-button-gradient-hover {
+  transition: none !important;
 }
 
-.abb-cancel-pill-button:hover::after {
-  inset: 2px;
-  border-radius: 25px;
+.abb-red-button-gradient-hover:hover {
+  background: linear-gradient(90deg, #615EEF 13%, #E00 65.5%) !important;
 }
 
 /* Legacy Cancel X Button Styles */

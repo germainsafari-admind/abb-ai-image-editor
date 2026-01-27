@@ -127,10 +127,10 @@ export default function ControlsRow({
                     variant="ghost"
                     size="sm"
                     onClick={() => onModeChange(isCropMode ? "view" : "crop")}
-                    className={`h-9 w-9 p-0 rounded-md text-[#000000] hover:bg-[#FFF] transition-colors [&_svg]:text-[#000000] ${
+                    className={`h-9 w-9 p-0 rounded-md transition-colors ${
                       isCropMode
-                        ? "bg-[#6764F6] hover:bg-[#FFF] active:bg-[#4542D4]"
-                        : "active:bg-gray-200"
+                        ? "bg-[#6764F6] hover:bg-[#6764F6] active:bg-[#6764F6] text-white [&_svg]:text-white"
+                        : "text-[#000000] hover:bg-[#FFF] active:bg-gray-200 [&_svg]:text-[#000000]"
                     }`}
                   >
                     <CropIcon className="w-[18px] h-[18px]" />
@@ -148,10 +148,10 @@ export default function ControlsRow({
                     variant="ghost"
                     size="sm"
                     onClick={() => onModeChange(isAIEditMode ? "view" : "ai-edit")}
-                    className={`h-9 w-9 p-0 rounded-md text-[#000000] hover:bg-[#FFF] transition-colors [&_svg]:text-[#000000] ${
+                    className={`h-9 w-9 p-0 rounded-md transition-colors ${
                       isAIEditMode
-                        ? "bg-[#6764F6] hover:bg-[#FFF] active:bg-[#4542D4]"
-                        : "active:bg-gray-200"
+                        ? "bg-[#6764F6] hover:bg-[#6764F6] active:bg-[#6764F6] text-white [&_svg]:text-white"
+                        : "text-[#000000] hover:bg-[#FFF] active:bg-gray-200 [&_svg]:text-[#000000]"
                     }`}
                   >
                     <AIIcon className="w-[18px] h-[18px]" />
@@ -169,10 +169,10 @@ export default function ControlsRow({
                     variant="ghost"
                     size="sm"
                     onClick={onBlur}
-                    className={`h-9 w-9 p-0 rounded-md text-[#000000] hover:bg-[#FFF] transition-colors [&_svg]:text-[#000000] ${
+                    className={`h-9 w-9 p-0 rounded-md transition-colors ${
                       isBlurred
-                        ? "bg-[#6764F6] hover:bg-[#FFF] active:bg-[#4542D4]"
-                        : "active:bg-gray-200"
+                        ? "bg-[#6764F6] hover:bg-[#6764F6] active:bg-[#6764F6] text-white [&_svg]:text-white"
+                        : "text-[#000000] hover:bg-[#FFF] active:bg-gray-200 [&_svg]:text-[#000000]"
                     }`}
                   >
                     <BlurIcon className="w-[18px] h-[18px]" />
@@ -192,23 +192,31 @@ export default function ControlsRow({
                     const event = new CustomEvent("applyCrop")
                     window.dispatchEvent(event)
                   }}
-                  className="bg-[#E30613] hover:bg-[#c70510] active:bg-[#b0040e] text-white rounded-full px-4 sm:px-5 h-12 text-sm font-semibold transition-colors"
+                  className="abb-red-button-gradient-hover bg-[#E30613] text-white rounded-full px-4 sm:px-5 h-12 text-sm font-semibold"
                 >
                   Apply Crop
                 </Button>
               ) : (
-                <Button
+                <button
                   onClick={handleDownloadClick}
-                  variant="outline"
-                  className="rounded-[28px] px-4 h-12 text-sm font-semibold bg-white border border-black/100 text-gray-800 hover:text-gray-950 hover:bg-gray-50 active:bg-gray-100 hover:border-black/80 transition-colors"
+                  className="abb-gradient-hover-pill export-options-pill flex items-center gap-2"
                   style={{
-                    gap: "8px",
-                    borderWidth: "1px",
+                    height: '48px',
+                    paddingLeft: '16px',
+                    paddingRight: '16px',
+                    fontSize: '16px',
+                    fontWeight: 500,
                   }}
                 >
-                  <span>Export options</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </Button>
+                  <span className="text-[#000000]">Export options</span>
+                  <Image
+                    src="/export options.svg"
+                    alt="Export options"
+                    width={20}
+                    height={20}
+                    className="w-5 h-5"
+                  />
+                </button>
               )}
             </div>
           </div>

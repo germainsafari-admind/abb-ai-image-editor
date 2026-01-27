@@ -45,25 +45,20 @@ export default function MetadataPromptModal({ isOpen, onClose, onNoThanks, onAdd
           <div className="flex items-center justify-between">
             <button
               onClick={onNoThanks}
-              className="transition-colors hover:opacity-90"
+              className="abb-gradient-hover-pill"
               style={{
                 height: '48px',
-                borderRadius: '28px',
-                borderWidth: '2px',
-                borderColor: '#000000',
                 paddingLeft: '24px',
                 paddingRight: '24px',
                 fontSize: '16px',
                 fontWeight: 500,
-                backgroundColor: 'transparent',
-                color: '#000000'
               }}
             >
-              No, thanks
+              <span className="text-[#000000]">No, thanks</span>
             </button>
             <button
               onClick={onAddMetadata}
-              className="text-white transition-colors hover:opacity-90"
+              className="abb-red-button-gradient-hover text-white"
               style={{
                 backgroundColor: '#FF000F',
                 height: '48px',
