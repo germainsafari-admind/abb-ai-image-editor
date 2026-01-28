@@ -6,11 +6,10 @@ import Header from "@/components/header"
 import { UploadContent } from "@/components/upload/upload-modal"
 import { ArrowRight } from "lucide-react"
 
-type ViewState = 'landing' | 'expanding' | 'upload' | 'refining'
+type ViewState = 'landing' | 'expanding' | 'refining'
 
 export default function Home() {
   const [viewState, setViewState] = useState<ViewState>('landing')
-  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null)
   const router = useRouter()
   
   // Animation stages for landing
@@ -41,31 +40,18 @@ export default function Home() {
   const handleStartEditing = () => {
     setViewState('expanding')
     setTimeout(() => {
-      setViewState('upload')
+      setViewState('refining')
     }, 700)
   }
 
-  const handleImageUploaded = (imageUrl: string) => {
-    setUploadedImageUrl(imageUrl)
-    setViewState('refining')
-    
-    // Store flag to show info banner on editor
-    localStorage.setItem("showColorCorrectionBanner", "true")
-    
-    // Extended duration to cover both processing and refining
-    setTimeout(() => {
-      router.push("/editor")
-    }, 8000)
-  }
-
   const getPanelWidth = () => {
-    if (viewState === 'expanding' || viewState === 'upload' || viewState === 'refining') {
+    if (viewState === 'expanding' || viewState === 'refining') {
       return '100%'
     }
     return '420px'
   }
-
-  const shouldHideContent = viewState === 'expanding' || viewState === 'upload' || viewState === 'refining'
+  
+  const shouldHideContent = viewState === 'expanding' || viewState === 'refining'
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -171,20 +157,10 @@ export default function Home() {
             </button>
           </div>
 
-          {/* Upload Modal Content - floating on glassy background */}
-          {viewState === 'upload' && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <UploadContent 
-                onImageUploaded={handleImageUploaded}
-                containerWidth="890px"
-              />
-            </div>
-          )}
-
           {/* Refining State - floating on glassy background */}
-          {viewState === 'refining' && uploadedImageUrl && (
+          {viewState === 'refining' && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <RefiningView imageUrl={uploadedImageUrl} />
+              <RefiningView />
             </div>
           )}
         </div>
@@ -194,10 +170,16 @@ export default function Home() {
 }
 
 // Refining view component
-function RefiningView({ imageUrl }: { imageUrl: string }) {
+function RefiningView() {
   const [dots, setDots] = useState('')
+  const [imageUrl, setImageUrl] = useState<string | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [isRefining, setIsRefining] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
+    if (!isRefining) return
+
     const interval = setInterval(() => {
       setDots(prev => {
         if (prev === '...') return ''
@@ -205,42 +187,87 @@ function RefiningView({ imageUrl }: { imageUrl: string }) {
       })
     }, 400)
     return () => clearInterval(interval)
-  }, [])
+  }, [isRefining])
+
+  const handleImageUploaded = (uploadedUrl: string) => {
+    setImageUrl(uploadedUrl)
+    setIsRefining(true)
+
+    // Store flag to show info banner on editor
+    localStorage.setItem("showColorCorrectionBanner", "true")
+
+    // Extended duration to cover both processing and refining
+    setTimeout(() => {
+      router.push("/editor")
+    }, 8000)
+  }
+
+  // No image selected yet and not refining: show upload UI inside the refining flow
+  if (!imageUrl && !isRefining) {
+    return (
+      <div className="absolute inset-0 flex items-center justify-center">
+        <UploadContent 
+          onImageUploaded={handleImageUploaded}
+          containerWidth="890px"
+          hideWhileUploading
+          onUploadStart={() => setIsRefining(true)}
+          onLocalPreview={(url) => {
+            setPreviewUrl(url)
+            setIsRefining(true)
+          }}
+        />
+      </div>
+    )
+  }
+
+  // Refining card (shared layout) – extends the design you showed
+  const effectiveImageUrl = imageUrl ?? previewUrl
+  const showPlaceholderImage = !effectiveImageUrl
 
   return (
-    <div className="relative w-full max-w-2xl mx-auto px-4 animate-fade-in">
+    <div className="relative w-full max-w-4xl mx-auto px-6 py-8 animate-fade-in">
       {/* Card container */}
-      <div className="bg-white rounded-2xl shadow-2xl overflow-hidden relative">
-        {/* Image container with fixed size and shimmer overlay */}
-        <div className="p-8 flex flex-col items-center">
-          <div className="relative w-full h-[400px] flex items-center justify-center mb-6 overflow-hidden rounded-lg">
-            {/* Image with fixed container */}
-            <img 
-              src={imageUrl} 
-              alt="Uploaded image"
-              className="w-full h-full object-cover rounded-lg"
-            />
-            {/* Shimmer overlay - only on image area */}
-            <div 
-              className="absolute inset-0 z-10 pointer-events-none overflow-hidden rounded-lg"
-              style={{
-                background: 'linear-gradient(90deg, rgba(103, 100, 246, 0.00) 25%, rgba(103, 100, 246, 0.60) 50%, rgba(103, 100, 246, 0.00) 75%)',
-                backgroundSize: '200% 100%',
-                animation: 'shimmer 2s infinite linear',
-              }}
-            />
+      <div className="bg-white rounded-3xl shadow-2xl overflow-hidden relative">
+        {/* Image container with fixed inner frame and shimmer overlay */}
+        <div className="px-10 pt-10 pb-8 flex flex-col items-center gap-8">
+          <div className="relative w-[800px] max-w-full h-[320px] rounded-2xl bg-white flex items-center justify-center overflow-hidden">
+            <div className="relative w-[325.35px] h-[215px] overflow-hidden shadow-md bg-white">
+              {/* Image or placeholder with fixed container */}
+              {showPlaceholderImage ? (
+                <div className="w-full h-full bg-gradient-to-br from-slate-200 to-slate-300" />
+              ) : (
+                <img 
+                  src={effectiveImageUrl ?? ""} 
+                  alt="Uploaded image"
+                  className="w-full h-full object-cover"
+                />
+              )}
+              {/* Shimmer overlay - only on image area */}
+              <div 
+                className="absolute inset-0 z-10 pointer-events-none overflow-hidden"
+                style={{
+                  background: 'linear-gradient(90deg, rgba(103, 100, 246, 0.00) 25%, rgba(103, 100, 246, 0.60) 50%, rgba(103, 100, 246, 0.00) 75%)',
+                  backgroundSize: '200% 100%',
+                  animation: 'shimmer 2s infinite linear',
+                }}
+              />
+            </div>
           </div>
           
           {/* Refining text */}
-          <h2 
-            className="text-2xl font-bold tracking-wide text-gray-900 mb-2 uppercase"
-            style={{ fontFamily: 'var(--font-abb-voice-display)' }}
-          >
-            REFINING<span className="inline-block w-8 text-left">{dots}</span>
-          </h2>
-          <p className="text-gray-600 text-sm">
-            Brand color correction is processing.
-          </p>
+          <div className="text-center">
+            <h2 
+              className="text-[28px] font-bold tracking-[0.08em] text-gray-900 mb-2 uppercase"
+              style={{ fontFamily: 'var(--font-abb-voice-display)' }}
+            >
+              REFINING<span className="inline-block w-8 text-left">{dots}</span>
+            </h2>
+            <p className="text-gray-600 text-sm">
+              {showPlaceholderImage
+                ? "Uploading and preparing your image. Brand color correction will start shortly."
+                : "Brand color correction is processing."}
+            </p>
+          </div>
         </div>
       </div>
     </div>

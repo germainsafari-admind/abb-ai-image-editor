@@ -32,10 +32,16 @@ function UploadArrowIcon({ className }: { className?: string }) {
 interface UploadContentProps {
   onImageUploaded: (imageUrl: string) => void
   containerWidth?: string
+  // Optional: signal parent that upload has started so it can switch UI (e.g. to refining view)
+  onUploadStart?: () => void
+  // Optional: provide a local preview URL (object URL) immediately when a file is selected
+  onLocalPreview?: (previewUrl: string) => void
+  // Optional: hide this upload card while uploading so only parent UI is visible
+  hideWhileUploading?: boolean
 }
 
 // Reusable upload content component (can be used embedded or in modal)
-export function UploadContent({ onImageUploaded, containerWidth = "890px" }: UploadContentProps) {
+export function UploadContent({ onImageUploaded, containerWidth = "890px", onUploadStart, onLocalPreview, hideWhileUploading }: UploadContentProps) {
   const [isUploading, setIsUploading] = useState(false)
   const [formatError, setFormatError] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -46,7 +52,13 @@ export function UploadContent({ onImageUploaded, containerWidth = "890px" }: Upl
     e.preventDefault()
     setIsDragActive(false)
     const file = e.dataTransfer.files[0]
-    if (file) await uploadFile(file)
+    if (!file) return
+
+    // Provide immediate local preview before upload
+    const localUrl = URL.createObjectURL(file)
+    onLocalPreview?.(localUrl)
+
+    await uploadFile(file)
   }
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -61,7 +73,13 @@ export function UploadContent({ onImageUploaded, containerWidth = "890px" }: Upl
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) await uploadFile(file)
+    if (!file) return
+
+    // Provide immediate local preview before upload
+    const localUrl = URL.createObjectURL(file)
+    onLocalPreview?.(localUrl)
+
+    await uploadFile(file)
   }
 
   const uploadFile = async (file: File) => {
@@ -72,8 +90,10 @@ export function UploadContent({ onImageUploaded, containerWidth = "890px" }: Upl
     }
 
     setFormatError(false)
-    setIsUploading(true)
     setError(null)
+    setIsUploading(true)
+    // Let parent know upload has started so it can switch to refining UI
+    onUploadStart?.()
 
     try {
       const formData = new FormData()
@@ -123,6 +143,11 @@ export function UploadContent({ onImageUploaded, containerWidth = "890px" }: Upl
     if (formatError) return "upload-dropzone upload-dropzone-error"
     if (isDragActive || isHovered) return "upload-dropzone upload-dropzone-hover"
     return "upload-dropzone"
+  }
+
+  if (isUploading && hideWhileUploading) {
+    // Parent (e.g. refining modal) will show its own UI while upload is in progress
+    return null
   }
 
   return (
