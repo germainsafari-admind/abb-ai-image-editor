@@ -675,14 +675,17 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
   }
 
   const isMetadataStep = step === "metadata-step1" || step === "metadata-step2"
+  const isNextStep = step === "next-step"
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 sm:p-5 lg:p-6">
       <div 
         className={`bg-white flex flex-col w-full ${
           isMetadataStep
-            ? "max-w-[890px] lg:w-[890px] lg:h-[700px] max-h-[calc(100vh-32px)] sm:max-h-[calc(100vh-40px)] lg:max-h-[calc(100vh-64px)]" 
-            : "max-w-[800px] max-h-[calc(100vh-32px)] sm:max-h-[calc(100vh-40px)] lg:max-h-[calc(100vh-48px)]"
+            ? "max-w-[890px] lg:w-[890px] lg:h-[700px] max-h-[calc(100vh-32px)] sm:max-h-[calc(100vh-40px)] lg:max-h-[calc(100vh-64px)]"
+            : isNextStep
+              ? "max-w-[800px] lg:w-[800px] lg:h-[487px] max-h-[calc(100vh-32px)] sm:max-h-[calc(100vh-40px)] lg:max-h-[calc(100vh-64px)]"
+              : "max-w-[800px] max-h-[calc(100vh-32px)] sm:max-h-[calc(100vh-40px)] lg:max-h-[calc(100vh-48px)]"
         } overflow-auto`}
         style={{
           borderRadius: '8px',
@@ -799,13 +802,17 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
         {step === "next-step" && (
           <>
             <h2 
-              className="text-2xl font-bold mb-12 text-black"
-              style={{ fontFamily: 'var(--font-abb-voice-display)' }}
+              className="font-bold mb-12 text-black"
+              style={{ 
+                fontFamily: 'var(--font-abb-voice-display)',
+                fontSize: '32px',
+                lineHeight: '120%'
+              }}
             >
               WHAT WOULD YOU LIKE TO DO NEXT?
             </h2>
 
-            <div className="flex flex-col gap-12">
+            <div className="flex flex-col justify-between h-full gap-12">
               <p 
                 className="text-base text-black"
                 style={{
@@ -823,8 +830,8 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
               <div className="flex items-center justify-between">
                 <Button 
                   variant="outline" 
-                  onClick={() => setStep("download")}
-                  className="transition-colors hover:opacity-90"
+                  onClick={onClose}
+                  className="abb-gradient-hover-pill transition-colors"
                   style={{
                     height: '48px',
                     borderRadius: '28px',
@@ -845,7 +852,7 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
                     onClose()
                     window.location.href = '/'
                   }}
-                  className="text-white transition-colors hover:opacity-90"
+                  className="abb-red-button-gradient-hover text-white transition-none"
                   style={{
                     backgroundColor: '#FF000F',
                     height: '48px',
