@@ -227,10 +227,10 @@ function RefiningView() {
   return (
     <div className="relative w-full max-w-4xl mx-auto px-6 py-8 animate-fade-in">
       {/* Card container */}
-      <div className="bg-white rounded-3xl shadow-2xl overflow-hidden relative">
+      <div className="bg-white rounded-[6px] shadow-2xl overflow-hidden relative">
         {/* Image container with fixed inner frame and shimmer overlay */}
         <div className="px-10 pt-10 pb-8 flex flex-col items-center gap-8">
-          <div className="relative w-[800px] max-w-full h-[320px] rounded-2xl bg-white flex items-center justify-center overflow-hidden">
+          <div className="relative w-[800px] max-w-full h-[320px] rounded-[6px] bg-white flex items-center justify-center overflow-hidden">
             <div className="relative w-[325.35px] h-[215px] overflow-hidden shadow-md bg-white">
               {/* Image or placeholder with fixed container */}
               {showPlaceholderImage ? (
