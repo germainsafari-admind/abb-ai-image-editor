@@ -218,6 +218,14 @@ export default function EditorPage() {
 
   const hasActiveCropHeader = editorMode === "crop" && cropHeaderInfo.isActive
 
+  if (!imageState) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-muted-foreground">Loading image...</div>
+      </div>
+    )
+  }
+
   // Determine which pixel dimensions to display:
   // - While actively cropping with a preset/custom ratio, show the live crop box pixels
   // - Otherwise, show the current image dimensions
@@ -229,14 +237,6 @@ export default function EditorPage() {
     hasActiveCropHeader && cropHeaderInfo.widthPx && cropHeaderInfo.heightPx
       ? cropHeaderInfo.heightPx
       : imageState.height
-
-  if (!imageState) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-muted-foreground">Loading image...</div>
-      </div>
-    )
-  }
 
   return (
     <div className="h-dvh max-h-dvh bg-background flex flex-col overflow-hidden relative">

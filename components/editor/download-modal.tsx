@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ABBLoader } from "@/components/icons/abb-loader"
 import type { ImageState } from "@/types/editor"
 import MetadataStep1 from "./metadata/metadata-step1"
 import MetadataStep2 from "./metadata/metadata-step2"
@@ -93,6 +93,7 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
   const [format, setFormat] = useState<"PNG" | "JPG">("JPG")
   const [transparentBg, setTransparentBg] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
+  const [showDownloadSuccess, setShowDownloadSuccess] = useState(false)
 
   // Metadata state
   const [sourceInfo, setSourceInfo] = useState<SourceInfo>({
@@ -123,6 +124,7 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
   useEffect(() => {
     if (!isOpen) {
       setStep("download")
+      setShowDownloadSuccess(false)
       setMetadataApplied(false)
       setSourceInfo({
         business: "",
@@ -146,6 +148,17 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
       setTransparentBg(false)
     }
   }, [isOpen, skipToDownload, imageState.isBlurred])
+
+  // After a successful download, briefly show the checkmark state
+  useEffect(() => {
+    if (step === "downloading" && showDownloadSuccess) {
+      const timer = setTimeout(() => {
+        setStep("next-step")
+        setShowDownloadSuccess(false)
+      }, 1200)
+      return () => clearTimeout(timer)
+    }
+  }, [step, showDownloadSuccess])
 
   // Detect AI when entering metadata step 1
   useEffect(() => {
@@ -487,6 +500,7 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
 
   const handleDownload = async () => {
     setIsDownloading(true)
+    setShowDownloadSuccess(false)
     setStep("downloading")
     try {
       let dataUrl: string
@@ -645,12 +659,12 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
       if (dataUrl.startsWith("blob:")) {
         URL.revokeObjectURL(dataUrl)
       }
-
-      setStep("next-step")
+      setShowDownloadSuccess(true)
     } catch (error) {
       console.error("Download error:", error)
       alert("Download failed. Please try again.")
       setStep("download")
+      setShowDownloadSuccess(false)
     } finally {
       setIsDownloading(false)
     }
@@ -734,11 +748,50 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
               EXPORT OPTIONS
             </h2>
 
-            <div className="flex flex-col items-center justify-center min-h-[300px]">
-              <div className="text-sm text-gray-500 mb-2">Downloading in progress..</div>
-              <div 
-                className="w-2 h-2 rounded-full bg-[#E30613] animate-pulse"
-              />
+            <div className="flex flex-col items-center justify-center min-h-[300px] gap-4">
+              <div className="text-sm text-gray-500">Downloading in progress..</div>
+              {isDownloading && !showDownloadSuccess && (
+                <div
+                  className="flex items-center justify-center"
+                  style={{
+                    width: "48px",
+                    height: "48px",
+                    padding: "4px",
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  <ABBLoader size={32} strokeWidth={2} speedMs={900} />
+                </div>
+              )}
+              {!isDownloading && showDownloadSuccess && (
+                <div
+                  className="flex items-center justify-center"
+                  style={{
+                    width: "56px",
+                    height: "56px",
+                    aspectRatio: "1 / 1",
+                    borderRadius: "9999px",
+                    border: "3px solid #E4E7FF",
+                  }}
+                >
+                  <svg
+                    width="28"
+                    height="28"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M6 12.5L10 16.5L18 8.5"
+                      stroke="#E4E7FF"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+              )}
             </div>
           </>
         )}
