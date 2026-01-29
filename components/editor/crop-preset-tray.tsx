@@ -17,29 +17,16 @@ interface CropPresetTrayProps {
   onChangeCustomHeight: (value: string) => void
 }
 
-// Fixed slot dimensions - all presets sit in identically-sized slots
-const SLOT_SIZE = 72
+// Preset box: fixed width 48px, height varies by aspect ratio
+const PRESET_WIDTH = 48
 
 /**
- * Compute inner box dimensions that visually represent the aspect ratio.
- * Portrait ratios → tall narrow box
- * Square → square box
- * Landscape ratios → short wide box
+ * Compute preset box dimensions: width is always 48px, height from ratio (w/h = ratio => h = w/ratio).
  */
 const getBoxDimensions = (ratio: number) => {
-  const maxDim = SLOT_SIZE - 8 // leave 4px padding each side
-
-  if (ratio >= 1) {
-    // Landscape or square: width = max, height = max/ratio
-    const w = maxDim
-    const h = Math.max(20, Math.round(maxDim / ratio))
-    return { w, h }
-  } else {
-    // Portrait: height = max, width = max * ratio
-    const h = maxDim
-    const w = Math.max(20, Math.round(maxDim * ratio))
-    return { w, h }
-  }
+  const w = PRESET_WIDTH
+  const h = Math.max(20, Math.round(PRESET_WIDTH / ratio))
+  return { w, h }
 }
 
 const CropPresetTray: React.FC<CropPresetTrayProps> = ({
@@ -56,22 +43,26 @@ const CropPresetTray: React.FC<CropPresetTrayProps> = ({
 }) => {
   const [hoveredPreset, setHoveredPreset] = useState<CategoryPreset | null>(null)
 
+  // Shared tray wrapper: design padding 20px 24px, radius 16px; pb-5 keeps category chips 20px from bottom
+  const trayWrapperClass =
+    "mx-auto rounded-2xl border border-border bg-white shadow-[0_0_58.2px_0_rgba(0,0,0,0.10)] px-6 pt-5 pb-5 pointer-events-auto min-w-[320px] min-h-[240px]"
+
   // Initial info state – no category selected yet
   if (!selectedCategory) {
     return (
-      <div className="mx-auto rounded-2xl border border-border bg-white shadow-xl px-4 py-6 sm:px-8 pointer-events-auto">
-        <div className="text-base font-semibold mb-4">Select media type:</div>
-        <div className="mb-6 rounded-xl bg-[#E4E7FF] px-6 py-7 text-center text-[14px] leading-[1.5] text-[#3B3F5C] font-normal">
+      <div className={`${trayWrapperClass} flex flex-col items-start gap-4`}>
+        <div className="text-base font-semibold">Select media type:</div>
+        <div className="rounded-xl bg-[#E4E7FF] px-6 py-7 text-center text-[14px] leading-[1.5] text-[#3B3F5C] font-normal w-full">
           Choose a category to display the cropping presets aligned
           <br />
           with its standard formats for each type of media.
         </div>
-        <div className="flex flex-wrap gap-2 mt-1 text-xs sm:text-sm justify-center sm:justify-start">
+        <div className="flex flex-nowrap gap-2 overflow-x-auto pb-0.5 text-xs sm:text-sm font-sans font-normal">
           {categories.map((category) => (
             <button
               key={category.name}
               onClick={() => onSelectCategory(category.name)}
-              className="px-3 py-1.5 rounded-full font-medium transition-all bg-[#F0F0F0] text-gray-700 hover:bg-[#E4E7FF]"
+              className="flex-shrink-0 px-3 py-1.5 rounded-full font-normal transition-all bg-[#F0F0F0] text-gray-700 hover:bg-[#E4E7FF]"
             >
               {category.label}
             </button>
@@ -87,12 +78,12 @@ const CropPresetTray: React.FC<CropPresetTrayProps> = ({
   const displayPreset = hoveredPreset || selectedPreset
 
   return (
-    <div className="mx-auto rounded-2xl border border-border bg-white/95 backdrop-blur shadow-xl px-4 py-4 sm:px-6 pointer-events-auto">
+    <div className={`${trayWrapperClass} flex flex-col items-start gap-4`}>
       {/* Title row */}
       {selectedCategory === "custom" ? (
-        <div className="text-sm font-medium mb-4">Custom resolution:</div>
+        <div className="text-sm font-medium">Custom resolution:</div>
       ) : (
-        <div className="mb-4">
+        <div>
           <div className="text-sm font-medium">
             {currentCategoryLabel} format:
             {displayPreset && (
@@ -111,7 +102,7 @@ const CropPresetTray: React.FC<CropPresetTrayProps> = ({
 
       {/* Preset buttons or custom inputs */}
       {selectedCategory === "custom" ? (
-        <div className="mb-4">
+        <div>
           <div className="text-xs text-muted-foreground mb-2">Type required image ratio:</div>
           <div className="flex items-center gap-2">
             <input
@@ -140,7 +131,7 @@ const CropPresetTray: React.FC<CropPresetTrayProps> = ({
         </div>
       ) : (
         currentCategory.presets.length > 0 && (
-          <div className="flex items-start gap-3 mb-4 overflow-x-auto pb-2">
+          <div className="flex items-start gap-[23px] overflow-x-auto pb-2 w-full">
             {currentCategory.presets.map((preset) => {
               const isSelected = selectedPreset?.name === preset.name
               const { w, h } = getBoxDimensions(preset.ratio)
@@ -149,7 +140,7 @@ const CropPresetTray: React.FC<CropPresetTrayProps> = ({
                 <div
                   key={preset.name}
                   className="flex-shrink-0 flex items-start justify-center"
-                  style={{ width: SLOT_SIZE, height: SLOT_SIZE }}
+                  style={{ width: PRESET_WIDTH, minHeight: h }}
                 >
                   <button
                     type="button"
@@ -172,15 +163,15 @@ const CropPresetTray: React.FC<CropPresetTrayProps> = ({
         )
       )}
 
-      {/* Category chips row */}
-      <div className="flex flex-wrap gap-2 mt-1 text-xs sm:text-sm">
+      {/* Category chips: same line, 8px gap, 20px from bottom (card pb-5), ABBvoice Regular */}
+      <div className="flex flex-nowrap gap-2 overflow-x-auto pb-0.5 text-xs sm:text-sm font-sans font-normal mt-auto">
         {categories.map((category) => {
           const isSelected = selectedCategory === category.name
           return (
             <button
               key={category.name}
               onClick={() => onSelectCategory(category.name)}
-              className={`px-3 py-1.5 rounded-full font-medium transition-all ${
+              className={`flex-shrink-0 px-3 py-1.5 rounded-full font-normal transition-all ${
                 isSelected ? "bg-[#6764F6] text-white shadow-sm" : "bg-[#F0F0F0] text-gray-700 hover:bg-[#E4E7FF]"
               }`}
             >
