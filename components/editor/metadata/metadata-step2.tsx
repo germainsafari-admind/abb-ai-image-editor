@@ -73,7 +73,7 @@ export default function MetadataStep2({
         {/* Metadata fields - Reduced gaps */}
         <div className="flex-1 flex flex-col gap-2 sm:gap-2.5 min-w-0 min-h-0">
           <div className="flex-shrink-0">
-            <label className="text-xs sm:text-sm font-medium mb-1 block">Title</label>
+            <label className="text-xs sm:text-sm font-medium mb-1 block">File name</label>
             <Input
               type="text"
               value={metadata.title}

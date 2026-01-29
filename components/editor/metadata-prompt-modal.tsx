@@ -39,7 +39,7 @@ export default function MetadataPromptModal({ isOpen, onClose, onNoThanks, onAdd
               color: "#1F1F1F",
             }}
           >
-            Make your asset easier to find and prepared for seamless upload to Media Bank or Brand Portal. The AI metadata feature automatically suggests a clear title, smart tags, and a concise description—making your asset platform-ready.
+            Make your asset easier to find and prepared for seamless upload to Media Bank or Brand Portal. The AI metadata feature uses your source information for the file name and suggests smart tags and a concise description—making your asset platform-ready.
           </p>
 
           <div className="flex items-center justify-between">

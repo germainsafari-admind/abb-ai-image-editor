@@ -313,8 +313,9 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
 
       const result = await response.json()
 
+      // File name comes from step 1 source info (previewFileName), not from AI image interpretation
       setMetadata({
-        title: result.title || result.description?.split(".")[0] || "Image",
+        title: previewFileName,
         description: result.description || "",
         tags: result.tags || [],
       })
