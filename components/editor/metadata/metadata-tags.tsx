@@ -13,20 +13,26 @@ export default function MetadataTags({ tags, onRemoveTag, fixedTags = [] }: Meta
   const isFixed = (tag: string) => fixedTags.includes(tag)
 
   return (
-    <div className="flex flex-wrap gap-1.5 sm:gap-2">
+    <div className="flex flex-wrap gap-2">
       {tags.map((tag) => (
         <span
           key={tag}
-          className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 text-xs font-medium bg-white border border-black text-foreground"
+          className="metadata-tag-box group inline-flex items-center justify-center gap-[var(--Spacing-Component-xxxx-small,4px)] h-8 py-[var(--Spacing-Component-xxx-small,8px)] px-[var(--Spacing-Component-xx-small,16px)] font-normal bg-[var(--Primary-White,#FFF)] border border-[var(--ABB-Black,#000)] text-[var(--Grey---90,#1F1F1F)] transition-colors hover:border-2 hover:border-[var(--ABB-Lilac,#6764F6)]"
           style={{
-            borderWidth: '1.5px'
+            fontFamily: 'var(--font-abb-voice), ABBvoice, sans-serif',
+            fontSize: 'var(--Typography-Size-Body-x-small, 14px)',
+            fontStyle: 'normal',
+            fontWeight: 400,
+            lineHeight: 'var(--Typography-Line-Height-Body-x-small, 21px)',
+            letterSpacing: 'var(--Typography-Letter-Spacing-Body-x-small, 0)',
+            textAlign: 'center',
           }}
         >
           {tag}
           {!isFixed(tag) && (
             <button
               onClick={() => onRemoveTag(tag)}
-              className="text-foreground hover:text-foreground/70 transition-colors ml-0.5"
+              className="text-inherit hover:opacity-80 transition-opacity shrink-0 flex items-center justify-center"
               type="button"
               aria-label={`Remove ${tag} tag`}
             >
