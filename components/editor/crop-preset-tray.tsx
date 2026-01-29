@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { useState } from "react"
+import { ChevronDown } from "lucide-react"
 import type { CategoryPreset, CropCategory } from "@/lib/crop-presets"
 
 interface CropPresetTrayProps {
@@ -15,6 +16,7 @@ interface CropPresetTrayProps {
   onSelectPreset: (preset: CategoryPreset) => void
   onChangeCustomWidth: (value: string) => void
   onChangeCustomHeight: (value: string) => void
+  onHidePopup?: () => void
 }
 
 // Preset box: fixed width 48px, height varies by aspect ratio
@@ -40,6 +42,7 @@ const CropPresetTray: React.FC<CropPresetTrayProps> = ({
   onSelectPreset,
   onChangeCustomWidth,
   onChangeCustomHeight,
+  onHidePopup,
 }) => {
   const [hoveredPreset, setHoveredPreset] = useState<CategoryPreset | null>(null)
 
@@ -50,8 +53,20 @@ const CropPresetTray: React.FC<CropPresetTrayProps> = ({
   // Initial info state – no category selected yet
   if (!selectedCategory) {
     return (
-      <div className={`${trayWrapperClass} flex flex-col items-start gap-4`}>
-        <div className="text-base font-semibold">Select media type:</div>
+      <div className={`${trayWrapperClass} flex flex-col items-start gap-4 relative`}>
+        <div className="w-full flex items-center justify-between gap-2">
+          <div className="text-base font-semibold">Select media type:</div>
+          {onHidePopup && (
+            <button
+              type="button"
+              onClick={onHidePopup}
+              className="flex-shrink-0 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+              aria-label="Hide crop options"
+            >
+              <ChevronDown className="w-5 h-5" />
+            </button>
+          )}
+        </div>
         <div className="rounded-xl bg-[#E4E7FF] px-6 py-7 text-center text-[14px] leading-[1.5] text-[#3B3F5C] font-normal w-full">
           Choose a category to display the cropping presets aligned
           <br />
@@ -78,27 +93,41 @@ const CropPresetTray: React.FC<CropPresetTrayProps> = ({
   const displayPreset = hoveredPreset || selectedPreset
 
   return (
-    <div className={`${trayWrapperClass} flex flex-col items-start gap-4`}>
-      {/* Title row */}
-      {selectedCategory === "custom" ? (
-        <div className="text-sm font-medium">Custom resolution:</div>
-      ) : (
-        <div>
-          <div className="text-sm font-medium">
-            {currentCategoryLabel} format:
-            {displayPreset && (
-              <span className="text-[#6764F6] font-medium ml-1">
-                {displayPreset.label} ({displayPreset.displayRatio})
-              </span>
-            )}
-          </div>
-          {currentCategory.description && (
-            <div className="text-xs text-muted-foreground mt-2">
-              {currentCategory.description}
+    <div className={`${trayWrapperClass} flex flex-col items-start gap-4 relative`}>
+      {/* Title row with chevron to hide popup */}
+      <div className="w-full flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          {selectedCategory === "custom" ? (
+            <div className="text-sm font-medium">Custom resolution:</div>
+          ) : (
+            <div>
+              <div className="text-sm font-medium">
+                {currentCategoryLabel} format:
+                {displayPreset && (
+                  <span className="text-[#6764F6] font-medium ml-1">
+                    {displayPreset.label} ({displayPreset.displayRatio})
+                  </span>
+                )}
+              </div>
+              {currentCategory.description && (
+                <div className="text-xs text-muted-foreground mt-2">
+                  {currentCategory.description}
+                </div>
+              )}
             </div>
           )}
         </div>
-      )}
+        {onHidePopup && (
+          <button
+            type="button"
+            onClick={onHidePopup}
+            className="flex-shrink-0 p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+            aria-label="Hide crop options"
+          >
+            <ChevronDown className="w-5 h-5" />
+          </button>
+        )}
+      </div>
 
       {/* Preset buttons or custom inputs */}
       {selectedCategory === "custom" ? (

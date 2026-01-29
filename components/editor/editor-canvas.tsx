@@ -31,6 +31,8 @@ interface EditorCanvasProps {
   onModeChange: (mode: EditorMode) => void
   onCropPresetChange?: (hasPreset: boolean) => void
   onCropHeaderChange?: (info: CropHeaderInfo) => void
+  cropPopupVisible?: boolean
+  onCropPopupVisibleChange?: (visible: boolean) => void
 }
 
 export default function EditorCanvas({
@@ -43,6 +45,8 @@ export default function EditorCanvas({
   onModeChange,
   onCropPresetChange,
   onCropHeaderChange,
+  cropPopupVisible = true,
+  onCropPopupVisibleChange,
 }: EditorCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const imageRef = useRef<HTMLImageElement>(null)
@@ -1225,12 +1229,11 @@ export default function EditorCanvas({
         </div>
       )}
 
-      {/* Crop format tray – floating overlay anchored to the outer editor canvas wrapper
-          so it stays stable and visible even as the image size or aspect ratio changes.
-          Hide when user is dragging the crop bounding box. */}
-      {editorMode === "crop" && !isDragging && (
+      {/* Crop format tray – only mount when visible so it never overlays the image card
+          and blocks crop box resize. When hidden, user can move and expand crop box freely. */}
+      {editorMode === "crop" && !isDragging && cropPopupVisible && (
         <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center z-40 pb-4 translate-y-6">
-          <div className="w-full max-w-3xl px-4 pointer-events-auto">
+          <div className="w-full max-w-3xl px-4 pointer-events-auto transition-[opacity] duration-200 ease-out opacity-100">
             <CropPresetTray
               categories={CROP_CATEGORIES}
               selectedCategory={selectedCategory}
@@ -1242,6 +1245,7 @@ export default function EditorCanvas({
               onSelectPreset={handlePresetSelect}
               onChangeCustomWidth={setCustomRatioWidth}
               onChangeCustomHeight={setCustomRatioHeight}
+              onHidePopup={onCropPopupVisibleChange ? () => onCropPopupVisibleChange(false) : undefined}
             />
           </div>
         </div>

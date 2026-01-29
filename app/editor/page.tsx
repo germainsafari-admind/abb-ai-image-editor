@@ -58,6 +58,7 @@ export default function EditorPage() {
   const [aiEditResult, setAiEditResult] = useState<{ beforeUrl: string; afterUrl: string } | null>(null)
   const [hasCropPresetSelected, setHasCropPresetSelected] = useState(false)
   const [cropHeaderInfo, setCropHeaderInfo] = useState<CropHeaderInfo>({ isActive: false })
+  const [cropPopupVisible, setCropPopupVisible] = useState(true)
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -212,6 +213,10 @@ export default function EditorPage() {
     if (mode !== "ai-result") {
       setAiEditResult(null)
     }
+    // When leaving crop mode, show popup again next time user enters crop
+    if (mode === "view") {
+      setCropPopupVisible(true)
+    }
   }, [imageState, addToHistory])
 
   const hasAnyBanner = activeNotification !== null
@@ -293,9 +298,11 @@ export default function EditorPage() {
                   {hasActiveCropHeader && (
                     <>
                       <button
-                        onClick={() => handleModeChange("view")}
+                        onClick={() =>
+                          cropPopupVisible ? handleModeChange("view") : setCropPopupVisible(true)
+                        }
                         className="text-muted-foreground hover:text-foreground transition-colors"
-                        aria-label="Back"
+                        aria-label={cropPopupVisible ? "Exit crop" : "Show crop options"}
                       >
                         <ChevronLeft className="w-5 h-5" />
                       </button>
@@ -340,6 +347,8 @@ export default function EditorPage() {
           onModeChange={handleModeChange}
           onCropPresetChange={setHasCropPresetSelected}
           onCropHeaderChange={setCropHeaderInfo}
+          cropPopupVisible={cropPopupVisible}
+          onCropPopupVisibleChange={setCropPopupVisible}
         />
 
         {/* Controls Row - matches image container max-width */}
