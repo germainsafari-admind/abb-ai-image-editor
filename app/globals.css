@@ -8,6 +8,11 @@
   --ABB-Black: #000;
   --ABB-Lilac: #6764F6;
   --Primary-White: #fff;
+  /* ABB Typography & Grey */
+  --Grey---90: #1F1F1F;
+  --Typography-Size-Body-x-small: 14px;
+  --Typography-Line-Height-Body-x-small: 21px;
+  --Typography-Letter-Spacing-Body-x-small: 0;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
