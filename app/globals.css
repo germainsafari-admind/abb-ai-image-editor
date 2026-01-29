@@ -469,3 +469,17 @@
     linear-gradient(0deg, #FFDCCD 8px, transparent 8px) repeat-y top left / 1px 18px,
     linear-gradient(0deg, #FFDCCD 8px, transparent 8px) repeat-y top right / 1px 18px;
 }
+
+/* AI prompt chip buttons (e.g. "Remove background") – ABBvoice Regular 12px */
+.abb-ai-prompt-chip {
+  font-family: var(--font-abb-voice), sans-serif;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 100%;
+  letter-spacing: var(--Typography-Letter-Spacing-Body-x-small, 0);
+  color: var(--Grey---90, #1F1F1F);
+  text-align: center;
+  leading-trim: both;
+  text-edge: cap;
+}

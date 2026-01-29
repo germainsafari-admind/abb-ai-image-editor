@@ -1190,10 +1190,10 @@ export default function EditorCanvas({
                     <button
                       key={preset.key}
                       onClick={() => handlePresetClick(preset.key, preset.label)}
-                      className={`text-xs font-medium rounded-2xl border transition-colors flex items-center ${
+                      className={`abb-ai-prompt-chip rounded-2xl border transition-colors flex items-center ${
                         aiPrompt === preset.label
                           ? "bg-[#6764F6] text-white border-[#6764F6]"
-                          : "bg-white text-gray-700 border-gray-300 hover:bg-[#E4E7FF] hover:text-gray-900 hover:border-[#E4E7FF]"
+                          : "bg-white border-gray-300 hover:bg-[#E4E7FF] hover:text-[#1F1F1F] hover:border-[#E4E7FF]"
                       }`}
                       style={{ paddingTop: "9px", paddingBottom: "9px", paddingLeft: "8px", paddingRight: "8px" }}
                       disabled={isGenerating}
