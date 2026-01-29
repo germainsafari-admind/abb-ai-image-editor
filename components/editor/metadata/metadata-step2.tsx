@@ -43,7 +43,13 @@ export default function MetadataStep2({
   onApply,
   onBack,
 }: MetadataStep2Props) {
+  // When image was AI-edited in-system (e.g. Flux change scene), "AI generated" is a fixed tag and cannot be removed
+  const displayTags = imageState.isAIGenerated
+    ? ["AI generated", ...metadata.tags.filter((t) => t !== "AI generated")]
+    : metadata.tags
+
   const removeTag = (tag: string) => {
+    if (imageState.isAIGenerated && tag === "AI generated") return
     onMetadataChange({
       ...metadata,
       tags: metadata.tags.filter((t) => t !== tag),
@@ -113,7 +119,7 @@ export default function MetadataStep2({
 
           <div className="flex-shrink-0">
             <label className="text-xs sm:text-sm font-medium mb-1 block">AI suggested tags</label>
-            <MetadataTags tags={metadata.tags} onRemoveTag={removeTag} />
+            <MetadataTags tags={displayTags} onRemoveTag={removeTag} fixedTags={imageState.isAIGenerated ? ["AI generated"] : []} />
           </div>
 
           <div className="flex-shrink-0">

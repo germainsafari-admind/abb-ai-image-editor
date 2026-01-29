@@ -628,7 +628,10 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
         formData.append("image", blob, `image.${format.toLowerCase()}`)
         formData.append("title", metadata.title)
         formData.append("description", metadata.description)
-        formData.append("tags", metadata.tags.join(", "))
+        const tagsToEmbed = imageState.isAIGenerated
+          ? ["AI generated", ...metadata.tags.filter((t) => t !== "AI generated")]
+          : metadata.tags
+        formData.append("tags", tagsToEmbed.join(", "))
         formData.append("format", format)
 
         try {
