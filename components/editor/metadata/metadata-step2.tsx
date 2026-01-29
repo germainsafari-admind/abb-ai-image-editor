@@ -79,7 +79,7 @@ export default function MetadataStep2({
         {/* Metadata fields - Reduced gaps */}
         <div className="flex-1 flex flex-col gap-2 sm:gap-2.5 min-w-0 min-h-0">
           <div className="flex-shrink-0">
-            <label className="text-xs sm:text-sm font-medium mb-1 block">File name</label>
+            <label className="flex items-center gap-1 text-sm font-medium mb-2 block">File name</label>
             <Input
               type="text"
               value={metadata.title}
@@ -87,7 +87,7 @@ export default function MetadataStep2({
                 const value = e.target.value.slice(0, 200)
                 onMetadataChange({ ...metadata, title: value })
               }}
-              className="w-full h-9 sm:h-10 text-sm"
+              className="w-full flex-1 min-w-0 h-auto py-[10px] px-3 rounded-lg border border-[var(--ABB-Black)] bg-[var(--Primary-White)] text-foreground placeholder:text-muted-foreground focus-visible:border-[var(--ABB-Lilac,#6764F6)] focus-visible:ring-2 focus-visible:ring-[var(--ABB-Lilac,#6764F6)]/20 focus-visible:ring-offset-0 selection:bg-[var(--ABB-Black)] selection:text-[var(--Primary-White)] text-sm"
               maxLength={200}
             />
             <div className="text-xs text-muted-foreground mt-0.5 text-right">
@@ -123,7 +123,7 @@ export default function MetadataStep2({
           </div>
 
           <div className="flex-shrink-0">
-            <label className="text-xs sm:text-sm font-medium mb-1 block">Add your tags</label>
+            <label className="flex items-center gap-1 text-sm font-medium mb-2 block">Add your tags</label>
             <div className="flex gap-2">
               <Input
                 type="text"
@@ -131,7 +131,7 @@ export default function MetadataStep2({
                 onChange={(e) => onNewTagChange(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && onAddTag()}
                 placeholder="Type here..."
-                className="flex-1 h-9 sm:h-10 text-sm"
+                className="flex-1 min-w-0 h-auto py-[10px] px-3 rounded-lg border border-[var(--ABB-Black)] bg-[var(--Primary-White)] text-foreground placeholder:text-muted-foreground focus-visible:border-[var(--ABB-Lilac,#6764F6)] focus-visible:ring-2 focus-visible:ring-[var(--ABB-Lilac,#6764F6)]/20 focus-visible:ring-offset-0 selection:bg-[var(--ABB-Black)] selection:text-[var(--Primary-White)] text-sm"
               />
               <button 
                 onClick={onAddTag} 
