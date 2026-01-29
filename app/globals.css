@@ -483,3 +483,7 @@
   leading-trim: both;
   text-edge: cap;
 }
+
+.abb-ai-prompt-chip.abb-ai-prompt-chip--selected {
+  color: white;
+}

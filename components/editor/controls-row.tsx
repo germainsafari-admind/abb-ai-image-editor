@@ -78,11 +78,11 @@ export default function ControlsRow({
         <div className="w-full max-w-5xl flex justify-center">
           {/* Bottom Bar Component - Rectangular with rounded corners */}
           <div
-            className="w-full flex items-center justify-between bg-[#F0F0F0] rounded-lg"
+            className="w-full flex items-center bg-[#F0F0F0] rounded-lg"
             style={{ height: "64px", padding: "8px 12px" }}
           >
-            {/* Left Group: Undo/Redo */}
-            <div className="flex items-center gap-0.5">
+            {/* Left Group: Undo/Redo - flex-1 so left/right balance and center stays fixed */}
+            <div className="flex items-center gap-0.5 flex-1 justify-start min-w-0">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -118,8 +118,8 @@ export default function ControlsRow({
               </Tooltip>
             </div>
 
-            {/* Center Group: Main Tools */}
-            <div className="flex items-center gap-1">
+            {/* Center Group: Main Tools - no flex grow/shrink so it keeps fixed width; left/right flex-1 keeps it centered */}
+            <div className="flex items-center gap-1 flex-shrink-0">
               {/* Crop Button */}
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -184,8 +184,8 @@ export default function ControlsRow({
               </Tooltip>
             </div>
 
-            {/* Right Group: Export Options or Apply Crop */}
-            <div className="flex items-center">
+            {/* Right Group: Export Options or Apply Crop - flex-1 + justify-end so right side balances left */}
+            <div className="flex items-center flex-1 justify-end min-w-0">
               {showApplyCrop ? (
                 <Button
                   onClick={() => {
