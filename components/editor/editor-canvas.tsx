@@ -1172,7 +1172,7 @@ export default function EditorCanvas({
       {/* AI Edit input panel - floating overlay anchored to the outer wrapper */}
       {editorMode === "ai-edit" && !isGenerating && (
         <div className="absolute inset-x-0 bottom-0 flex justify-center pointer-events-none z-40 pb-4 translate-y-6">
-          <div className="w-full max-w-[664px] px-4 pointer-events-auto">
+          <div className="w-full max-w-[664px] px-4 pointer-events-auto animate-in fade-in-0 slide-in-from-bottom-4 duration-300 ease-out">
             <div className="bg-white rounded-lg shadow-[0_0_58.2px_rgba(0,0,0,0.1)] py-5 px-6">
               <input
                 type="text"
@@ -1233,7 +1233,7 @@ export default function EditorCanvas({
           and blocks crop box resize. When hidden, user can move and expand crop box freely. */}
       {editorMode === "crop" && !isDragging && cropPopupVisible && (
         <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center z-40 pb-4 translate-y-6">
-          <div className="w-full max-w-3xl px-4 pointer-events-auto transition-[opacity] duration-200 ease-out opacity-100">
+          <div className="w-full max-w-3xl px-4 pointer-events-auto animate-in fade-in-0 slide-in-from-bottom-4 duration-300 ease-out">
             <CropPresetTray
               categories={CROP_CATEGORIES}
               selectedCategory={selectedCategory}
