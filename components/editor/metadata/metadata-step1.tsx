@@ -84,7 +84,7 @@ export default function MetadataStep1({
               onValueChange={(value) => onSourceInfoChange({ ...sourceInfo, business: value })}
             >
               <SelectTrigger 
-                className="w-full h-10 focus-visible:border-[#EEF1FF] hover:border-[#EEF1FF] data-[state=open]:border-[#EEF1FF] focus-visible:ring-[#EEF1FF]/50"
+                className="w-full h-auto min-h-[41px] py-[10px] px-3 rounded-lg border border-[var(--ABB-Black)] bg-[var(--Primary-White)] text-foreground focus-visible:border-[var(--ABB-Black)] focus-visible:ring-2 focus-visible:ring-[var(--ABB-Black)]/20 focus-visible:ring-offset-0 hover:border-[var(--ABB-Black)] data-[state=open]:border-[var(--ABB-Black)] data-[state=open]:ring-2 data-[state=open]:ring-[var(--ABB-Black)]/20"
               >
                 <SelectValue placeholder="Select" />
               </SelectTrigger>
@@ -114,7 +114,7 @@ export default function MetadataStep1({
                 value={sourceInfo.campaign}
                 onChange={(e) => onSourceInfoChange({ ...sourceInfo, campaign: e.target.value })}
                 placeholder="Type here..."
-                className="w-full"
+                className="metadata-step1-input w-full flex-1 min-w-0 h-auto py-[10px] px-3 rounded-lg border border-[var(--ABB-Black)] bg-[var(--Primary-White)] text-foreground placeholder:text-muted-foreground focus-visible:border-[var(--ABB-Black)] focus-visible:ring-2 focus-visible:ring-[var(--ABB-Black)]/20 focus-visible:ring-offset-0 selection:bg-[var(--ABB-Black)] selection:text-[var(--Primary-White)]"
               />
             )}
           </div>
@@ -135,7 +135,7 @@ export default function MetadataStep1({
                 value={sourceInfo.product}
                 onChange={(e) => onSourceInfoChange({ ...sourceInfo, product: e.target.value })}
                 placeholder="Type here..."
-                className="w-full"
+                className="metadata-step1-input w-full flex-1 min-w-0 h-auto py-[10px] px-3 rounded-lg border border-[var(--ABB-Black)] bg-[var(--Primary-White)] text-foreground placeholder:text-muted-foreground focus-visible:border-[var(--ABB-Black)] focus-visible:ring-2 focus-visible:ring-[var(--ABB-Black)]/20 focus-visible:ring-offset-0 selection:bg-[var(--ABB-Black)] selection:text-[var(--Primary-White)]"
               />
             )}
           </div>
@@ -150,7 +150,7 @@ export default function MetadataStep1({
               onValueChange={(value) => onSourceInfoChange({ ...sourceInfo, assetType: value })}
             >
               <SelectTrigger 
-                className="w-full h-10 focus-visible:border-[#EEF1FF] hover:border-[#EEF1FF] data-[state=open]:border-[#EEF1FF] focus-visible:ring-[#EEF1FF]/50"
+                className="w-full h-auto min-h-[41px] py-[10px] px-3 rounded-lg border border-[var(--ABB-Black)] bg-[var(--Primary-White)] text-foreground focus-visible:border-[var(--ABB-Black)] focus-visible:ring-2 focus-visible:ring-[var(--ABB-Black)]/20 focus-visible:ring-offset-0 hover:border-[var(--ABB-Black)] data-[state=open]:border-[var(--ABB-Black)] data-[state=open]:ring-2 data-[state=open]:ring-[var(--ABB-Black)]/20"
               >
                 <SelectValue placeholder="Select" />
               </SelectTrigger>
