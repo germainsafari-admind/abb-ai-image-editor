@@ -143,7 +143,7 @@ export default function Home() {
 
             <button
               onClick={handleStartEditing}
-              className="mt-7 inline-flex items-center gap-2.5 bg-[#E30613] hover:bg-[#c70510] text-white pl-5 pr-4 py-2.5 rounded-full font-medium text-[15px] transition-all duration-500 ease-out hover:scale-[1.02] active:scale-[0.98]"
+              className="mt-7 inline-flex items-center gap-2.5 abb-red-button-gradient-hover bg-[#E30613] text-white pl-5 pr-4 py-2.5 rounded-full font-medium text-[15px] transition-all duration-500 ease-out hover:scale-[1.02] active:scale-[0.98]"
               style={{
                 opacity: animationStage >= 7 ? 1 : 0,
                 transform: animationStage >= 7 ? 'translateY(0) scale(1)' : 'translateY(12px) scale(0.95)',
