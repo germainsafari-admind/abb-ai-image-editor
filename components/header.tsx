@@ -3,12 +3,14 @@
 import Link from "next/link"
 import Image from "next/image"
 
-export default function Header() {
-  return (
-    <header className="h-20 sm:h-24 border-b border-border bg-background sticky top-0 z-40 flex-shrink-0">
-      <div className="h-full px-4 sm:px-6 flex items-center justify-between">
-        {/* ABB Logo - using provided SVG */}
-        <Link href="/" className="flex items-center flex-shrink-0">
+interface HeaderProps {
+  /** When provided, logo click calls this instead of navigating (e.g. to close upload and go back to landing on home). */
+  onLogoClick?: () => void
+}
+
+export default function Header({ onLogoClick }: HeaderProps) {
+  const logoContent = (
+    <>
           <svg width="72" height="30" viewBox="0 0 64 25" fill="none" xmlns="http://www.w3.org/2000/svg">
             <mask
               id="mask0"
@@ -96,7 +98,27 @@ export default function Header() {
               fill="#FF000F"
             />
           </svg>
-        </Link>
+    </>
+  )
+
+  return (
+    <header className="h-20 sm:h-24 border-b border-border bg-background sticky top-0 z-40 flex-shrink-0">
+      <div className="h-full px-4 sm:px-6 flex items-center justify-between">
+        {/* ABB Logo - using provided SVG */}
+        {onLogoClick ? (
+          <button
+            type="button"
+            onClick={onLogoClick}
+            className="flex items-center flex-shrink-0 hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
+            aria-label="Go to start"
+          >
+            {logoContent}
+          </button>
+        ) : (
+          <Link href="/" className="flex items-center flex-shrink-0">
+            {logoContent}
+          </Link>
+        )}
 
         {/* Center Title */}
         <div className="flex-1 text-center">
