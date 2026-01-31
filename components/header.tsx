@@ -5,20 +5,11 @@ import Image from "next/image"
 
 export default function Header() {
   return (
-    <header
-      className="sticky top-0 z-40 flex-shrink-0 box-border flex w-full max-w-[1440px] mx-auto items-center justify-between border-b bg-[var(--Primary-White)]"
-      style={{
-        height: 72,
-        padding: "0 var(--Spacing-Grid-margin, 48px)",
-        gap: "var(--Spacing-Component-medium, 40px)",
-        borderBottomWidth: "var(--Border-Size-x-small, 1px)",
-        borderBottomStyle: "solid",
-        borderBottomColor: "var(--ABB-Gray-05, #F0F0F0)",
-      }}
-    >
-      {/* ABB Logo - using provided SVG */}
-      <Link href="/" className="flex items-center flex-shrink-0">
-        <svg width="72" height="30" viewBox="0 0 64 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <header className="h-20 sm:h-24 border-b border-border bg-background sticky top-0 z-40 flex-shrink-0">
+      <div className="h-full px-4 sm:px-6 flex items-center justify-between">
+        {/* ABB Logo - using provided SVG */}
+        <Link href="/" className="flex items-center flex-shrink-0">
+          <svg width="72" height="30" viewBox="0 0 64 25" fill="none" xmlns="http://www.w3.org/2000/svg">
             <mask
               id="mask0"
               style={{ maskType: "luminance" }}
@@ -104,31 +95,32 @@ export default function Header() {
               d="M26.7129 24.0755H34.1457V12.439H26.7129V24.0755Z"
               fill="#FF000F"
             />
-        </svg>
-      </Link>
+          </svg>
+        </Link>
 
-      {/* Center Title */}
-      <div className="flex-1 text-center">
-        <h1 className="text-sm sm:text-base font-semibold text-foreground">
-          AI Image Editor <span className="text-xs sm:text-sm font-normal text-muted-foreground">Beta</span>
-        </h1>
-      </div>
+        {/* Center Title */}
+        <div className="flex-1 text-center">
+          <h1 className="text-sm sm:text-base font-semibold text-foreground">
+            AI Image Editor <span className="text-xs sm:text-sm font-normal text-muted-foreground">Beta</span>
+          </h1>
+        </div>
 
-      {/* Right Actions */}
-      <div className="flex items-center gap-2 flex-shrink-0">
-        <button
-          type="button"
-          className="h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center hover:bg-transparent focus:outline-none focus-visible:outline-none"
-          aria-label="Logout"
-        >
-          <Image
-            src="/navbar Icon on the top right corner.svg"
-            alt="Logout"
-            width={24}
-            height={24}
-            className="w-5 h-5 sm:w-6 sm:h-6"
-          />
-        </button>
+        {/* Right Actions */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button 
+            type="button"
+            className="h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center hover:bg-transparent focus:outline-none focus-visible:outline-none"
+            aria-label="Logout"
+          >
+            <Image 
+              src="/navbar Icon on the top right corner.svg" 
+              alt="Logout" 
+              width={24} 
+              height={24}
+              className="w-5 h-5 sm:w-6 sm:h-6"
+            />
+          </button>
+        </div>
       </div>
     </header>
   )
