@@ -68,8 +68,8 @@ export default function MetadataStep2({
         </p>
       </div>
 
-      {/* Content - Reduced padding, especially bottom */}
-      <div className="flex-1 flex flex-col lg:flex-row gap-3 sm:gap-4 lg:gap-5 px-4 sm:px-6 lg:px-8 py-3 sm:py-4 lg:py-4 min-h-0 overflow-hidden">
+      {/* Content - scrollable so Add button and footer stay reachable on small viewports */}
+      <div className="flex-1 flex flex-col lg:flex-row gap-3 sm:gap-4 lg:gap-5 px-4 sm:px-6 lg:px-8 py-3 sm:py-4 lg:py-4 min-h-0 overflow-y-auto overflow-x-hidden">
         <ImagePreview 
           imageState={imageState}
           aiDisplayInfo={aiDisplayInfo}
