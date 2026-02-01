@@ -39,6 +39,8 @@ interface MetadataStep1Props {
   isGenerating: boolean
   onGenerate: () => void
   onCancel: () => void
+  /** When true (e.g. Adobe Stock, Shutterstock, Getty), Division/Asset type use defaults and Campaign/Product are disabled */
+  isStockImage?: boolean
 }
 
 export default function MetadataStep1({
@@ -51,6 +53,7 @@ export default function MetadataStep1({
   isGenerating,
   onGenerate,
   onCancel,
+  isStockImage = false,
 }: MetadataStep1Props) {
   return (
     <div className="flex flex-col h-full">
@@ -102,13 +105,14 @@ export default function MetadataStep1({
             <div className="flex items-center gap-2 mb-2">
               <Switch
                 checked={sourceInfo.campaignEnabled}
-                onCheckedChange={(checked) =>
+                onCheckedChange={isStockImage ? undefined : (checked) =>
                   onSourceInfoChange({ ...sourceInfo, campaignEnabled: checked, campaign: checked ? sourceInfo.campaign : "" })
                 }
+                disabled={isStockImage}
               />
-              <label className="text-sm font-medium">Campaign name</label>
+              <label className={`text-sm font-medium ${isStockImage ? "text-muted-foreground" : ""}`}>Campaign name</label>
             </div>
-            {sourceInfo.campaignEnabled && (
+            {sourceInfo.campaignEnabled && !isStockImage && (
               <Input
                 type="text"
                 value={sourceInfo.campaign}
@@ -123,13 +127,14 @@ export default function MetadataStep1({
             <div className="flex items-center gap-2 mb-2">
               <Switch
                 checked={sourceInfo.productEnabled}
-                onCheckedChange={(checked) =>
+                onCheckedChange={isStockImage ? undefined : (checked) =>
                   onSourceInfoChange({ ...sourceInfo, productEnabled: checked, product: checked ? sourceInfo.product : "" })
                 }
+                disabled={isStockImage}
               />
-              <label className="text-sm font-medium">Product name</label>
+              <label className={`text-sm font-medium ${isStockImage ? "text-muted-foreground" : ""}`}>Product name</label>
             </div>
-            {sourceInfo.productEnabled && (
+            {sourceInfo.productEnabled && !isStockImage && (
               <Input
                 type="text"
                 value={sourceInfo.product}

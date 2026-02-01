@@ -32,16 +32,31 @@ interface MetadataResult {
 
 type ModalStep = "download" | "metadata-step1" | "metadata-step2" | "downloading" | "next-step"
 
-// Helper function to check if filename is Adobe Stock
+// Match stock patterns anywhere in filename (handles timestamp prefix e.g. 1769946221743-AdobeStock_356666639942.jpg)
+const ADOBE_STOCK_PATTERN = /Adobe\s*Stock[_\s](\d+)/i
+const SHUTTERSTOCK_PATTERN = /Shutterstock[_\s](\d+)/i
+const GETTY_PATTERN = /Getty\s*Images?[_\s](\d+)/i
+
 function isAdobeStock(filename?: string): boolean {
   if (!filename) return false
-  return /^Adobe\s+Stock[_\s]\d+/i.test(filename)
+  const base = filename.replace(/\.[^/.]+$/, "").trim()
+  return ADOBE_STOCK_PATTERN.test(base)
 }
 
-// Helper function to extract Adobe Stock ID
+// Check if filename indicates a stock image (Adobe Stock, Shutterstock, Getty)
+function isStockImage(filename?: string): boolean {
+  if (!filename) return false
+  const base = filename.replace(/\.[^/.]+$/, "").trim()
+  return (
+    ADOBE_STOCK_PATTERN.test(base) ||
+    SHUTTERSTOCK_PATTERN.test(base) ||
+    GETTY_PATTERN.test(base)
+  )
+}
+
 function extractAdobeStockId(filename?: string): string | null {
   if (!filename) return null
-  const match = filename.match(/Adobe\s+Stock[_\s](\d+)/i)
+  const match = filename.replace(/\.[^/.]+$/, "").match(ADOBE_STOCK_PATTERN)
   return match ? match[1] : null
 }
 
@@ -141,13 +156,24 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
       })
       setTransparentBg(false)
       setAiDetectionResult(null)
-    } else if (!skipToDownload) {
-      setStep("metadata-step1")
+    } else {
+      if (!skipToDownload) {
+        setStep("metadata-step1")
+        // Defaults: Division=Corporate, Asset type=Photo; for stock images Campaign/Product stay disabled via isStockImage
+        setSourceInfo({
+          business: "Corporate",
+          campaign: "",
+          campaignEnabled: false,
+          product: "",
+          productEnabled: false,
+          assetType: "Photo",
+        })
+      }
     }
     if (isOpen && imageState.isBlurred) {
       setTransparentBg(false)
     }
-  }, [isOpen, skipToDownload, imageState.isBlurred])
+  }, [isOpen, skipToDownload, imageState.isBlurred, imageState.originalFileName])
 
   // After a successful download, briefly show the checkmark state
   useEffect(() => {
@@ -727,6 +753,7 @@ export default function DownloadModal({ isOpen, imageState, onClose, skipToDownl
             isGenerating={isGenerating}
             onGenerate={generateMetadata}
             onCancel={onClose}
+            isStockImage={!!(imageState.originalFileName && isStockImage(imageState.originalFileName))}
           />
         )}
 
