@@ -19,6 +19,9 @@
   --Spacing-Component-xxxx-small: 4px;
   --Spacing-Component-xxx-small: 8px;
   --Spacing-Component-xx-small: 16px;
+  --Spacing-Grid-margin: 48px;
+  --Spacing-Component-medium: 40px;
+  --popup-overlay-shadow: 0 0 58.2px 0 rgba(0, 0, 0, 0.1);
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -500,4 +503,9 @@
 
 .abb-ai-prompt-chip.abb-ai-prompt-chip--selected {
   color: white;
+}
+
+/* Crop and AI edit popups: overlay shadow so they sit clearly above the image card */
+.abb-popup-overlay-shadow {
+  box-shadow: var(--popup-overlay-shadow);
 }

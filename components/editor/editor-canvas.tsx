@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react"
+import { createPortal } from "react-dom"
 import { ChevronLeft } from "lucide-react"
 import { CheckIcon, RetryIcon } from "@/components/icons/abb-icons"
 import type { ImageState, EditorMode, CropDimensions } from "@/types/editor"
@@ -87,6 +88,92 @@ export default function EditorCanvas({
     calculateEditorMaxHeight(viewport.height, viewport.isShortScreen, viewport.isVeryShortScreen),
     [viewport.height, viewport.isShortScreen, viewport.isVeryShortScreen]
   )
+
+  // Bottom offset for popups (crop tray / AI edit) so they don't cover the controls bar.
+  // Falls back to the current hard-coded behavior (104px) if the controls element can't be found.
+  const [popupBottomOffset, setPopupBottomOffset] = useState(104)
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    // Prioritize the actual control bar element over the wrapper
+    const controlsSelectors = [
+      "[data-controls-bar]",
+      "[data-editor-controls]",
+      "#editor-controls",
+      ".editor-controls",
+    ]
+
+    let controlsResizeObserver: ResizeObserver | null = null
+    let cleanupScroll: (() => void) | null = null
+    let cancelled = false
+
+    const findControlsEl = () =>
+      controlsSelectors
+        .map((s) => document.querySelector<HTMLElement>(s))
+        .find((el): el is HTMLElement => Boolean(el)) || null
+
+    const attachControls = (controlsEl: HTMLElement) => {
+      const update = () => {
+        if (cancelled) return
+        const rect = controlsEl.getBoundingClientRect()
+        const fromBottom = Math.max(0, window.innerHeight - rect.top)
+        if (Number.isFinite(fromBottom) && fromBottom >= 60) {
+          setPopupBottomOffset(fromBottom)
+        } else {
+          setPopupBottomOffset(104)
+        }
+      }
+      update()
+      controlsResizeObserver = new ResizeObserver(update)
+      controlsResizeObserver.observe(controlsEl)
+    }
+
+    let controlsAttached = false
+    const tryAttach = (attempt = 0) => {
+      if (cancelled) return
+      const controlsEl = findControlsEl()
+      if (controlsEl && !controlsAttached) {
+        attachControls(controlsEl)
+        controlsAttached = true
+      }
+      if (!controlsEl) {
+        if (attempt < 10) setTimeout(() => tryAttach(attempt + 1), 150)
+      }
+    }
+
+    tryAttach()
+
+    const onResize = () => {
+      if (cancelled) return
+      const controlsEl = findControlsEl()
+      if (controlsEl) {
+        const rect = controlsEl.getBoundingClientRect()
+        const fromBottom = Math.max(0, window.innerHeight - rect.top)
+        if (Number.isFinite(fromBottom) && fromBottom >= 60) setPopupBottomOffset(fromBottom)
+        else setPopupBottomOffset(104)
+      }
+    }
+    const onScroll = () => onResize()
+    window.addEventListener("resize", onResize)
+    window.addEventListener("scroll", onScroll, true)
+    cleanupScroll = () => {
+      window.removeEventListener("resize", onResize)
+      window.removeEventListener("scroll", onScroll, true)
+    }
+
+    return () => {
+      cancelled = true
+      controlsResizeObserver?.disconnect()
+      cleanupScroll?.()
+    }
+  }, [])
+
+  // Popup bottom: position 12px above the control bar
+  // The 24px gap between image card and controls is split evenly:
+  // - 12px above the control bar (popup bottom)
+  // - 12px past the image card boundary (popup extends into the image)
+  const popupBottomPx = popupBottomOffset + 12
 
   // Get current category (fallback to first for safety)
   const currentCategory =
@@ -886,11 +973,12 @@ export default function EditorCanvas({
   }
 
   return (
-    <div className="relative flex-1 flex flex-col overflow-hidden">
-      {/* Main canvas container - flex-1 to fill available space */}
+    <div className="relative flex flex-col overflow-hidden min-h-0">
+      {/* Canvas container: no flex-1 so it only takes content height; image sits just below banner, 24px above control row on all devices */}
       <div
         ref={containerRef}
-        className="flex-1 flex items-center justify-center px-4 py-2 sm:px-6 sm:py-3 lg:px-8 lg:py-4 overflow-hidden"
+        data-editor-image-card
+        className="flex items-start justify-center px-4 pt-0 pb-0 sm:px-6 lg:px-8 overflow-hidden min-h-0"
       >
         {/* AI Result Split View */}
         {editorMode === "ai-result" && aiEditResult && (
@@ -1169,87 +1257,126 @@ export default function EditorCanvas({
         )}
       </div>
 
-      {/* AI Edit input panel - floating overlay anchored to the outer wrapper */}
-      {editorMode === "ai-edit" && !isGenerating && (
-        <div className="absolute inset-x-0 bottom-0 flex justify-center pointer-events-none z-40 pb-4 translate-y-6">
-          <div className="w-full max-w-[664px] px-4 pointer-events-auto animate-in fade-in-0 slide-in-from-bottom-4 duration-300 ease-out">
-            <div className="bg-white rounded-lg shadow-[0_0_58.2px_rgba(0,0,0,0.1)] py-5 px-6">
-              <input
-                type="text"
-                value={aiPrompt}
-                onChange={(e) => {
-                  setAiPrompt(e.target.value)
-                  // If the user starts typing, treat it as a custom prompt (no preset)
-                  setAiPresetKey(null)
-                }}
-                placeholder="Describe what you would like to change..."
-                className="w-full p-3 border-0 bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none text-sm"
-                onKeyDown={(e) => e.key === "Enter" && handleAIGenerate()}
-                disabled={isGenerating}
-              />
+      {/* AI Edit input panel – portaled so it sits above the controls bar; shadow: 0 0 58.2px 0 rgba(0,0,0,0.1) */}
+      {editorMode === "ai-edit" &&
+        !isGenerating &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            className="pointer-events-none fixed inset-x-0 flex justify-center"
+            style={{
+              bottom: `calc(${popupBottomPx}px + env(safe-area-inset-bottom, 0px))`,
+              zIndex: 9999,
+            }}
+          >
+            <div className="w-full max-w-[664px] px-4 pointer-events-auto animate-in fade-in-0 slide-in-from-bottom-4 duration-300 ease-out">
+              <div
+                className="bg-white rounded-lg py-5 px-6"
+                style={{ boxShadow: "0 0 58.2px 0 rgba(0, 0, 0, 0.1)" }}
+              >
+                <input
+                  type="text"
+                  value={aiPrompt}
+                  onChange={(e) => {
+                    setAiPrompt(e.target.value)
+                    setAiPresetKey(null)
+                  }}
+                  placeholder="Describe what you would like to change..."
+                  className="w-full p-3 border-0 bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none text-sm"
+                  onKeyDown={(e) => e.key === "Enter" && handleAIGenerate()}
+                  disabled={isGenerating}
+                />
 
-              <div className="flex items-center justify-between mt-4">
-                <div className="flex flex-wrap gap-2">
-                  {AI_PRESETS.map((preset) => (
-                    <button
-                      key={preset.key}
-                      onClick={() => handlePresetClick(preset.key, preset.label)}
-                      className={`abb-ai-prompt-chip rounded-2xl border transition-colors flex items-center ${
-                        aiPrompt === preset.label
-                          ? "abb-ai-prompt-chip--selected bg-[#6764F6] border-[#6764F6]"
-                          : "bg-white border-gray-300 hover:bg-[#E4E7FF] hover:text-[#1F1F1F] hover:border-[#E4E7FF]"
-                      }`}
-                      style={{ paddingTop: "9px", paddingBottom: "9px", paddingLeft: "8px", paddingRight: "8px" }}
-                      disabled={isGenerating}
-                    >
-                      {preset.label}
-                    </button>
-                  ))}
+                <div className="flex items-center justify-between mt-4">
+                  <div className="flex flex-wrap gap-2">
+                    {AI_PRESETS.map((preset) => (
+                      <button
+                        key={preset.key}
+                        onClick={() => handlePresetClick(preset.key, preset.label)}
+                        className={`abb-ai-prompt-chip rounded-2xl border transition-colors flex items-center ${
+                          aiPrompt === preset.label
+                            ? "abb-ai-prompt-chip--selected bg-[#6764F6] border-[#6764F6]"
+                            : "bg-white border-gray-300 hover:bg-[#E4E7FF] hover:text-[#1F1F1F] hover:border-[#E4E7FF]"
+                        }`}
+                        style={{ paddingTop: "9px", paddingBottom: "9px", paddingLeft: "8px", paddingRight: "8px" }}
+                        disabled={isGenerating}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={handleAIGenerate}
+                    disabled={!aiPrompt.trim() || isGenerating}
+                    className="abb-red-button-gradient-hover h-10 px-4 bg-[#EE0000] text-white rounded-full text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                  >
+                    {isGenerating ? "Generating..." : "Generate"}
+                  </button>
                 </div>
 
-                <button
-                  onClick={handleAIGenerate}
-                  disabled={!aiPrompt.trim() || isGenerating}
-                  className="abb-red-button-gradient-hover h-10 px-4 bg-[#EE0000] text-white rounded-full text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-                >
-                  {isGenerating ? "Generating..." : "Generate"}
-                </button>
+                {aiError && <div className="mt-3 p-2 bg-red-50 text-red-600 text-sm rounded-lg">{aiError}</div>}
               </div>
-
-              {aiError && <div className="mt-3 p-2 bg-red-50 text-red-600 text-sm rounded-lg">{aiError}</div>}
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
 
-      {/* AI Loading Popup - appears in place of AI edit overlay when generating */}
-      {editorMode === "ai-edit" && isGenerating && (
-        <div className="absolute inset-x-0 bottom-0 flex justify-center z-40 pb-4 translate-y-6">
-          <AILoadingPopup onCancel={handleCancelGeneration} />
-        </div>
-      )}
+      {/* AI Loading Popup – portaled so it sits above the controls bar; shadow: 0 0 58.2px 0 rgba(0,0,0,0.1) */}
+      {editorMode === "ai-edit" &&
+        isGenerating &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            className="fixed inset-x-0 flex justify-center"
+            style={{
+              bottom: `calc(${popupBottomPx}px + env(safe-area-inset-bottom, 0px))`,
+              zIndex: 9999,
+            }}
+          >
+            <AILoadingPopup onCancel={handleCancelGeneration} />
+          </div>,
+          document.body
+        )}
 
-      {/* Crop format tray – only mount when visible so it never overlays the image card
-          and blocks crop box resize. When hidden, user can move and expand crop box freely. */}
-      {editorMode === "crop" && !isDragging && cropPopupVisible && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center z-40 pb-4 translate-y-6">
-          <div className="w-full max-w-3xl px-4 pointer-events-auto animate-in fade-in-0 slide-in-from-bottom-4 duration-300 ease-out">
-            <CropPresetTray
-              categories={CROP_CATEGORIES}
-              selectedCategory={selectedCategory}
-              selectedPreset={selectedPreset}
-              customRatioWidth={customRatioWidth}
-              customRatioHeight={customRatioHeight}
-              currentCategoryLabel={currentCategory.label}
-              onSelectCategory={handleCategorySelect}
-              onSelectPreset={handlePresetSelect}
-              onChangeCustomWidth={setCustomRatioWidth}
-              onChangeCustomHeight={setCustomRatioHeight}
-              onHidePopup={onCropPopupVisibleChange ? () => onCropPopupVisibleChange(false) : undefined}
-            />
-          </div>
-        </div>
-      )}
+      {/* Crop format tray – rendered in a portal so it sits above the controls bar and
+          is never clipped. Fixed positioning and overlay shadow make it clearly visible. */}
+      {editorMode === "crop" &&
+        !isDragging &&
+        cropPopupVisible &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            className="pointer-events-none fixed inset-x-0 flex justify-center"
+            style={{
+              bottom: `calc(${popupBottomPx}px + env(safe-area-inset-bottom, 0px))`,
+              zIndex: 9999,
+            }}
+          >
+            <div
+              className="w-full max-w-3xl px-4 pointer-events-auto animate-in fade-in-0 slide-in-from-bottom-4 duration-300 ease-out"
+              style={{
+                maxHeight: `calc(100vh - (${popupBottomPx}px + 16px))`,
+                overflowY: "auto",
+              }}
+            >
+              <CropPresetTray
+                categories={CROP_CATEGORIES}
+                selectedCategory={selectedCategory}
+                selectedPreset={selectedPreset}
+                customRatioWidth={customRatioWidth}
+                customRatioHeight={customRatioHeight}
+                currentCategoryLabel={currentCategory.label}
+                onSelectCategory={handleCategorySelect}
+                onSelectPreset={handlePresetSelect}
+                onChangeCustomWidth={setCustomRatioWidth}
+                onChangeCustomHeight={setCustomRatioHeight}
+                onHidePopup={onCropPopupVisibleChange ? () => onCropPopupVisibleChange(false) : undefined}
+              />
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   )
 }

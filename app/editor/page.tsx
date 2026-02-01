@@ -247,12 +247,10 @@ export default function EditorPage() {
     <div className="h-dvh max-h-dvh bg-background flex flex-col overflow-hidden relative">
       <Header />
 
-      {/* Banner / crop-header region between navbar and image container.
-          We always reserve vertical space here so the image card never moves
-          when banners or crop headers appear or disappear. */}
+      {/* Banner / crop-header: mt-1 mb-1 = 4px gap (navbar↔banner and banner↔image match). */}
       <div className="flex-shrink-0 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto">
-          <div className="mt-2 mb-2 min-h-[56px] flex flex-col gap-2">
+          <div className="mt-1 mb-1 min-h-[48px] sm:min-h-[56px] flex flex-col gap-2">
             {/* Single notification banner - only one visible at a time */}
             {activeNotification !== null && (
               <div 
@@ -351,7 +349,7 @@ export default function EditorPage() {
           onCropPopupVisibleChange={setCropPopupVisible}
         />
 
-        {/* Controls Row - matches image container max-width */}
+        {/* Controls Row - 24px below image card on all devices */}
         <ControlsRow
           canUndo={historyIndex > 0}
           canRedo={historyIndex < editHistory.length - 1}
@@ -366,6 +364,8 @@ export default function EditorPage() {
           imageState={imageState}
           hasCropPresetSelected={hasCropPresetSelected}
         />
+        {/* Spacer: on large monitors extra space goes below the control panel */}
+        <div className="flex-1 min-h-0 flex-shrink-0" aria-hidden="true" />
       </main>
     </div>
   )

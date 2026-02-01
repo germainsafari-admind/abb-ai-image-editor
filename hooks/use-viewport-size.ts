@@ -70,9 +70,10 @@ export function useViewportSize(): ViewportSize {
 /**
  * Calculate the optimal max height for the editor canvas
  * based on current viewport dimensions.
- * 
+ *
  * Layout breakdown:
- * - Header: 80px (laptop) / 96px (monitor)
+ * - Header: 72px (design spec)
+ * - Banner region: 80px (base) / 96px (sm) reserved
  * - Controls bar: 64px
  * - Controls margin bottom: 48px (monitor) / 24px (laptop)
  * - Image dimension text: ~24px
@@ -84,7 +85,7 @@ export function calculateEditorMaxHeight(
   isVeryShortScreen: boolean
 ): string {
   // Fixed layout elements
-  const headerHeight = 96 // Always use standard header
+  const headerHeight = 72
   const controlsBar = 64
   const controlsMargin = isShortScreen ? 24 : 48
   const dimensionText = 24

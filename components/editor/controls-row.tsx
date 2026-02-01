@@ -71,13 +71,15 @@ export default function ControlsRow({
 
   return (
     <>
-      {/* Controls container - matches Figma design */}
+      {/* Controls container: 24px gap above (image card → control row); extra space below */}
       <div
-        className="flex justify-center px-4 sm:px-6 flex-shrink-0 mt-4 mb-6"
+        data-editor-controls
+        className="flex justify-center px-4 sm:px-6 flex-shrink-0 pt-6 pb-8"
       >
         <div className="w-full max-w-5xl flex justify-center">
           {/* Bottom Bar Component - Rectangular with rounded corners */}
           <div
+            data-controls-bar
             className="w-full flex items-center bg-[#F0F0F0] rounded-lg"
             style={{ height: "64px", padding: "8px 12px" }}
           >

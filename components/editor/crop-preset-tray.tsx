@@ -46,9 +46,9 @@ const CropPresetTray: React.FC<CropPresetTrayProps> = ({
 }) => {
   const [hoveredPreset, setHoveredPreset] = useState<CategoryPreset | null>(null)
 
-  // Shared tray wrapper: design padding 20px 24px, radius 16px; pb-5 keeps category chips 20px from bottom
+  // Shared tray wrapper: design padding 20px 24px, radius 16px; pb-5 keeps category chips 20px from bottom; overlay shadow per design
   const trayWrapperClass =
-    "mx-auto rounded-2xl border border-border bg-white shadow-[0_0_58.2px_0_rgba(0,0,0,0.10)] px-6 pt-5 pb-5 pointer-events-auto min-w-[320px] min-h-[240px]"
+    "mx-auto rounded-2xl border border-border bg-white abb-popup-overlay-shadow px-6 pt-5 pb-5 pointer-events-auto min-w-[320px] min-h-[240px]"
 
   // Initial info state – no category selected yet
   if (!selectedCategory) {

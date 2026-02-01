@@ -28,15 +28,15 @@ function CloseIcon({ className = "w-4 h-4" }: { className?: string }) {
 export default function AILoadingPopup({ onCancel }: AILoadingPopupProps) {
   return (
     <div className="absolute bottom-4 left-4 right-4 z-50 animate-in fade-in-0 slide-in-from-bottom-2 duration-200 flex justify-center">
-      <div 
+      <div
         className="bg-white flex items-center justify-between gap-4"
         style={{
           width: '671px',
           height: '88px',
           borderRadius: '16px',
           padding: '20px 24px',
-          boxShadow: '0 0 58.2px rgba(0, 0, 0, 0.1)',
           fontFamily: 'var(--font-abb-voice)',
+          boxShadow: '0 0 58.2px 0 rgba(0, 0, 0, 0.1)',
         }}
       >
           {/* ABB Loader and Status Message */}
