@@ -247,10 +247,10 @@ export default function EditorPage() {
     <div className="h-dvh max-h-dvh bg-background flex flex-col overflow-hidden relative">
       <Header />
 
-      {/* Banner / crop-header: mt-1 mb-1 = 4px gap (navbar↔banner and banner↔image match). */}
+      {/* Banner / crop-header: fixed min-height so image card stays stable when banner appears/disappears. */}
       <div className="flex-shrink-0 px-4 sm:px-6">
         <div className="max-w-5xl mx-auto">
-          <div className="mt-1 mb-1 min-h-[48px] sm:min-h-[56px] flex flex-col gap-2">
+          <div className="mt-1 mb-1 min-h-[58px] flex flex-col gap-2">
             {/* Single notification banner - only one visible at a time */}
             {activeNotification !== null && (
               <div 

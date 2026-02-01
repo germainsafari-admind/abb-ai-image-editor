@@ -44,6 +44,8 @@ export default function ControlsRow({
 
   const isCropMode = editorMode === "crop"
   const isAIEditMode = editorMode === "ai-edit" || editorMode === "ai-result"
+  // When crop or AI edit panel is open, hide tooltips so they don't overlap the popup; hover only changes bg
+  const showMainTooltips = !isCropMode && !isAIEditMode
 
   const showApplyCrop = isCropMode && hasCropPresetSelected
 
@@ -122,68 +124,113 @@ export default function ControlsRow({
 
             {/* Center Group: Main Tools - no flex grow/shrink so it keeps fixed width; left/right flex-1 keeps it centered */}
             <div className="flex items-center gap-1 flex-shrink-0">
-              {/* Crop Button */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onModeChange(isCropMode ? "view" : "crop")}
-                    className={`h-9 w-9 p-0 rounded-md transition-colors ${
-                      isCropMode
-                        ? "bg-[#6764F6] hover:bg-[#6764F6] active:bg-[#6764F6] text-white [&_svg]:text-white"
-                        : "text-[#000000] hover:bg-[#FFF] active:bg-gray-200 [&_svg]:text-[#000000]"
-                    }`}
-                  >
-                    <CropIcon className="w-[18px] h-[18px]" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Crop</p>
-                </TooltipContent>
-              </Tooltip>
+              {/* Crop Button - no tooltip when crop or AI edit panel is open */}
+              {showMainTooltips ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onModeChange(isCropMode ? "view" : "crop")}
+                      className={`h-9 w-9 p-0 rounded-md transition-colors ${
+                        isCropMode
+                          ? "bg-[#6764F6] hover:bg-[#6764F6] active:bg-[#6764F6] text-white [&_svg]:text-white"
+                          : "text-[#000000] hover:bg-[#FFF] active:bg-gray-200 [&_svg]:text-[#000000]"
+                      }`}
+                    >
+                      <CropIcon className="w-[18px] h-[18px]" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Crop</p>
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onModeChange(isCropMode ? "view" : "crop")}
+                  className={`h-9 w-9 p-0 rounded-md transition-colors ${
+                    isCropMode
+                      ? "bg-[#6764F6] hover:bg-[#6764F6] active:bg-[#6764F6] text-white [&_svg]:text-white"
+                      : "text-[#000000] hover:bg-[#FFF] active:bg-gray-200 [&_svg]:text-[#000000]"
+                  }`}
+                >
+                  <CropIcon className="w-[18px] h-[18px]" />
+                </Button>
+              )}
 
-              {/* AI Edit Button */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onModeChange(isAIEditMode ? "view" : "ai-edit")}
-                    className={`h-9 w-9 p-0 rounded-md transition-colors ${
-                      isAIEditMode
-                        ? "bg-[#6764F6] hover:bg-[#6764F6] active:bg-[#6764F6] text-white [&_svg]:text-white"
-                        : "text-[#000000] hover:bg-[#FFF] active:bg-gray-200 [&_svg]:text-[#000000]"
-                    }`}
-                  >
-                    <AIIcon className="w-[18px] h-[18px]" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Change scene</p>
-                </TooltipContent>
-              </Tooltip>
+              {/* AI Edit Button - no tooltip when crop or AI edit panel is open */}
+              {showMainTooltips ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onModeChange(isAIEditMode ? "view" : "ai-edit")}
+                      className={`h-9 w-9 p-0 rounded-md transition-colors ${
+                        isAIEditMode
+                          ? "bg-[#6764F6] hover:bg-[#6764F6] active:bg-[#6764F6] text-white [&_svg]:text-white"
+                          : "text-[#000000] hover:bg-[#FFF] active:bg-gray-200 [&_svg]:text-[#000000]"
+                      }`}
+                    >
+                      <AIIcon className="w-[18px] h-[18px]" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Change scene</p>
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onModeChange(isAIEditMode ? "view" : "ai-edit")}
+                  className={`h-9 w-9 p-0 rounded-md transition-colors ${
+                    isAIEditMode
+                      ? "bg-[#6764F6] hover:bg-[#6764F6] active:bg-[#6764F6] text-white [&_svg]:text-white"
+                      : "text-[#000000] hover:bg-[#FFF] active:bg-gray-200 [&_svg]:text-[#000000]"
+                  }`}
+                >
+                  <AIIcon className="w-[18px] h-[18px]" />
+                </Button>
+              )}
 
-              {/* Blur/Droplet Button */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={onBlur}
-                    className={`h-9 w-9 p-0 rounded-md transition-colors ${
-                      isBlurred
-                        ? "bg-[#6764F6] hover:bg-[#6764F6] active:bg-[#6764F6] text-white [&_svg]:text-white"
-                        : "text-[#000000] hover:bg-[#FFF] active:bg-gray-200 [&_svg]:text-[#000000]"
-                    }`}
-                  >
-                    <BlurIcon className="w-[18px] h-[18px]" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Blur</p>
-                </TooltipContent>
-              </Tooltip>
+              {/* Blur/Droplet Button - no tooltip when crop or AI edit panel is open */}
+              {showMainTooltips ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={onBlur}
+                      className={`h-9 w-9 p-0 rounded-md transition-colors ${
+                        isBlurred
+                          ? "bg-[#6764F6] hover:bg-[#6764F6] active:bg-[#6764F6] text-white [&_svg]:text-white"
+                          : "text-[#000000] hover:bg-[#FFF] active:bg-gray-200 [&_svg]:text-[#000000]"
+                      }`}
+                    >
+                      <BlurIcon className="w-[18px] h-[18px]" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Blur</p>
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onBlur}
+                  className={`h-9 w-9 p-0 rounded-md transition-colors ${
+                    isBlurred
+                      ? "bg-[#6764F6] hover:bg-[#6764F6] active:bg-[#6764F6] text-white [&_svg]:text-white"
+                      : "text-[#000000] hover:bg-[#FFF] active:bg-gray-200 [&_svg]:text-[#000000]"
+                  }`}
+                >
+                  <BlurIcon className="w-[18px] h-[18px]" />
+                </Button>
+              )}
             </div>
 
             {/* Right Group: Export Options or Apply Crop - flex-1 + justify-end so right side balances left */}
