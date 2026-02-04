@@ -1,4 +1,4 @@
-name: Deploy to Azure App Service
+name: Deploy Next.js (standalone) to Azure App Service
 
 on:
   push:
@@ -8,8 +8,10 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -22,7 +24,7 @@ jobs:
           version: 9
           run_install: false
 
-      - name: Install
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Build
@@ -34,9 +36,14 @@ jobs:
           cp -r .next/static .next/standalone/.next/static
           cp -r public .next/standalone/public || true
 
-      - name: Deploy
+      - name: Create deployment zip
+        run: |
+          cd .next/standalone
+          zip -r ../../standalone.zip .
+
+      - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: "ABBAImageEditor"
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: .next/standalone
+          package: standalone.zip
