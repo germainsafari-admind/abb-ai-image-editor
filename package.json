@@ -6,7 +6,7 @@
     "build": "next build",
     "dev": "next dev",
     "lint": "eslint .",
-    "start": "next start -p $PORT"
+    "start": "node server.js"
   },
   "dependencies": {
     "@azure/storage-blob": "latest",
