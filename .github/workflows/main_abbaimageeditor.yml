@@ -32,17 +32,13 @@ jobs:
 
       - name: Prepare standalone bundle
         run: |
-          mkdir -p .next/standalone/.next
+          # Next.js standalone doesn't include these by default, but Azure needs them
           cp -r .next/static .next/standalone/.next/static
           cp -r public .next/standalone/public || true
 
-      - name: Remove Azure build artifacts from bundle
-        run: |
-          rm -f .next/standalone/node_modules.tar.gz
-          rm -f .next/standalone/oryx-manifest.toml
-
       - name: Create deployment zip
         run: |
+          # We enter the folder so that 'server.js' is at the root of the ZIP
           cd .next/standalone
           zip -r ../../standalone.zip .
 
