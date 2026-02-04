@@ -36,6 +36,11 @@ jobs:
           cp -r .next/static .next/standalone/.next/static
           cp -r public .next/standalone/public || true
 
+      - name: Remove Azure build artifacts from bundle
+        run: |
+          rm -f .next/standalone/node_modules.tar.gz
+          rm -f .next/standalone/oryx-manifest.toml
+
       - name: Create deployment zip
         run: |
           cd .next/standalone
