@@ -8,10 +8,8 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -24,23 +22,21 @@ jobs:
           version: 9
           run_install: false
 
-      - name: Enable pnpm store caching
-        uses: actions/cache@v4
-        with:
-          path: ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-
       - name: Install
         run: pnpm install --frozen-lockfile
 
       - name: Build
         run: pnpm build
 
+      - name: Prepare standalone bundle
+        run: |
+          mkdir -p .next/standalone/.next
+          cp -r .next/static .next/standalone/.next/static
+          cp -r public .next/standalone/public || true
+
       - name: Deploy
         uses: azure/webapps-deploy@v3
         with:
           app-name: "ABBAImageEditor"
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: .
+          package: .next/standalone
