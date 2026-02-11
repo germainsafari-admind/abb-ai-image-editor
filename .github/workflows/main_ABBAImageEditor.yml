@@ -1,4 +1,4 @@
-name: Build and deploy Next.js (Standalone) - abbaiphotoeditor
+name: Build and deploy Next.js (Standalone) - ABBAImageEditor
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest # Linux is faster and more reliable for Node builds
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -18,20 +18,19 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        # This flag is the "Magic Fix" for your React 19 / Vaul conflict
+        # This bypasses the React 19 / Vaul conflict
         run: npm install --legacy-peer-deps
 
       - name: Build Next.js app
         run: npm run build
 
       - name: Prepare Standalone Bundle
-        # Next.js standalone needs these folders copied manually to work on Azure
+        # Next.js standalone needs these folders manually copied to work on Azure
         run: |
           cp -r .next/static .next/standalone/.next/static
           cp -r public .next/standalone/public || true
 
       - name: Zip for Deployment
-        # We only zip the standalone folder to keep the deployment small and fast
         run: |
           cd .next/standalone
           zip -r ../../deploy.zip .
@@ -54,7 +53,6 @@ jobs:
       - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'abbaiphotoeditor'
-          # Use the specific secret name from your auto-generated file
+          app-name: 'ABBAImageEditor' # MUST MATCH AZURE PORTAL EXACTLY
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_ABDB95BC09DC410DBF8120C3C9AF9720 }}
           package: deploy.zip
