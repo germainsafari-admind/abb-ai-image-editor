@@ -54,5 +54,5 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'ABBAImageEditor' # MUST MATCH AZURE PORTAL EXACTLY
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_ABDB95BC09DC410DBF8120C3C9AF9720 }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: deploy.zip
